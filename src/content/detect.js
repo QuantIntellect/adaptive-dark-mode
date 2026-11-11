@@ -76,6 +76,39 @@
   }
 
   /**
+   * The page's own background, independent of scrolling: the root canvas,
+   * covered by the opaque background of any full-page wrapper (SPA roots such
+   * as #app, #__next or #root). Sites that switch theme by restyling only the
+   * wrapper (html/body transparent) are seen here. Returns { color, wrappers }.
+   */
+  function pageSurface() {
+    let color = canvasColor();
+    const wrappers = [];
+    const body = document.body;
+    if (!body) return { color, wrappers };
+    const vw = window.innerWidth;
+    const docH = Math.max(document.documentElement.scrollHeight, window.innerHeight);
+    let el = body;
+    for (let depth = 0; el && depth < 8; depth++) {
+      let next = null;
+      for (const child of el.children) {
+        if (MEDIA_TAGS.has(child.tagName) || child.tagName === 'SCRIPT' || child.tagName === 'STYLE') continue;
+        const r = child.getBoundingClientRect();
+        if (r.width >= vw * 0.9 && r.height >= docH * 0.6) {
+          next = child;
+          break;
+        }
+      }
+      if (!next) break;
+      const bg = C.parse(getComputedStyle(next).backgroundColor);
+      if (bg && bg.a >= 0.9) color = C.composite(bg, color);
+      wrappers.push(next);
+      el = next;
+    }
+    return { color, wrappers };
+  }
+
+  /**
    * Walk the paint stack under a viewport point (top to bottom) and return
    * either { media: true } or { color } — the composited backdrop color.
    */
@@ -170,5 +203,5 @@
     return { verdict, medianBgY, lightFrac, textY, mediaPoints, samples: bgY.length };
   }
 
-  ADM.detect = { authorScheme, sampleAppearance, backdropAtPoint, gradientColor, canvasColor, MEDIA_TAGS };
+  ADM.detect = { authorScheme, sampleAppearance, backdropAtPoint, gradientColor, canvasColor, pageSurface, MEDIA_TAGS };
 })(globalThis);

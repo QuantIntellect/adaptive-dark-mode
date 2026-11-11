@@ -31,11 +31,13 @@ function updateSettings(mutate) {
 }
 
 let verdictChain = Promise.resolve();
-function saveVerdict(key, v) {
+function saveVerdict(key, v, scheme) {
   verdictChain = verdictChain.then(async () => {
     const { verdicts = {} } = await chrome.storage.local.get('verdicts');
-    if (verdicts[key] && verdicts[key].v === v) return;
-    verdicts[key] = { v, t: Date.now() };
+    if (verdicts[key] && verdicts[key].v === v && verdicts[key].s === scheme) return;
+    // s: the system appearance the verdict was recorded under (sites that
+    // follow it are light in light mode and dark in dark mode).
+    verdicts[key] = { v, s: scheme, t: Date.now() };
     const keys = Object.keys(verdicts);
     if (keys.length > 3000) {
       keys.sort((a, b) => verdicts[a].t - verdicts[b].t).slice(0, keys.length - 2500).forEach((k) => delete verdicts[k]);
@@ -181,7 +183,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       return;
     case 'adm:verdict':
-      if (typeof msg.key === 'string' && ['light', 'dark', 'declares'].includes(msg.v)) saveVerdict(msg.key, msg.v);
+      if (typeof msg.key === 'string' && ['light', 'dark', 'declares'].includes(msg.v)) saveVerdict(msg.key, msg.v, msg.s === 'dark' ? 'dark' : 'light');
       return;
     case 'adm:setSite':
       updateSettings((s) => {

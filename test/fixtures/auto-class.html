@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Auto theme: class from a head script</title>
+<script>
+  // Typical "system" theme: set before first paint, follow later changes.
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  const apply = () => document.documentElement.classList.toggle('dark', mq.matches);
+  apply();
+  mq.addEventListener('change', apply);
+</script>
+<style>
+  :root { --bg: #ffffff; --fg: #111827; --card: #f9fafb; --border: #e5e7eb; --muted: #6b7280; --accent: #7c3aed; }
+  .dark { --bg: #0b0b0f; --fg: #f4f4f5; --card: #18181b; --border: #27272a; --muted: #a1a1aa; --accent: #a78bfa; }
+  body { margin: 0; font: 16px system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); }
+  main { padding: 24px; display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .muted { color: var(--muted); } a { color: var(--accent); }
+</style></head>
+<body>
+  <header><b>Auto theme</b>: <code>html.dark</code> set by a head script from <code>matchMedia</code></header>
+  <main>
+    <div class="card" id="card"><h2>First card</h2><p class="muted" id="muted">Muted supporting text.</p><a href="#" id="link">A link</a></div>
+    <div class="card"><h2>Second card</h2><p>Body text in the site's own theme.</p></div>
+    <div class="card"><h2>Third card</h2><p class="muted">More muted text.</p></div>
+    <div class="card"><h2>Fourth card</h2><p>The site supports dark mode by itself.</p></div>
+  </main>
+</body></html>

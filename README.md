@@ -69,7 +69,8 @@ screenshots, and how each engine mechanism maps to something an extension can do
 |---|---|
 | Runs only in dark mode, only where you allow it | "Follow system" mode, per-site on/off, "Use on all bright sites" |
 | Leaves sites with their own dark mode alone | `color-scheme: light dark` / `light only` (meta or CSS) → untouched. Author-managed subtrees are excluded. |
-| Leaves already-dark pages alone | Samples the rendered page after DOMContentLoaded. A cached verdict lets known bright sites start at `document_start`. |
+| Leaves already-dark pages alone | Samples the rendered page after DOMContentLoaded. A cached verdict, recorded per system appearance, lets known bright sites start at `document_start`. |
+| Sites with their own automatic theme keep it | Steps aside when the site turns dark by itself, including themes applied late by an app on a wrapper such as `#app`. The author's `prefers-color-scheme: dark` rules are kept as written. With **Always** on a light system they are switched on, so the site's own dark design is used. |
 | Light surfaces dark, dark text light, hue kept | A contrast-preserving luminance flip in OKLCH, anchored so white → `#1e1e1e` |
 | Semantic colors keep their meaning | Vivid badges and buttons stay. Vivid links are lightened just enough. |
 | Text readable on its real backdrop | Hit-tests what paints behind each text run, then 4.5:1 (or 7:1) |
@@ -103,8 +104,8 @@ are also compared pixel for pixel.
 
 | Browser | Mode | Fixture checks |
 |---|---|---|
-| Chrome for Testing 153.0.8010.12 | headless | 66 / 66 |
-| Google Chrome 157.0.8103.40 (macOS) | headed | 65 / 66. The miss is the pixel-identical "turned off" comparison. About 2,200 pixels around the two scaled product images differ, by 1 level out of 255 (15 in an earlier run). The separate "nothing left behind" check (0 attributes, 0 custom properties, 0 sheets) passed. The cause has not been isolated. |
+| Chrome for Testing 153.0.8010.12 | headless | 72 / 72 (1.0.1) |
+| Google Chrome 157.0.8103.40 (macOS) | headed | 65 / 66 (1.0.0, before the six auto-theme checks). The miss is the pixel-identical "turned off" comparison. About 2,200 pixels around the two scaled product images differ, by 1 level out of 255 (15 in an earlier run). The separate "nothing left behind" check (0 attributes, 0 custom properties, 0 sheets) passed. The cause has not been isolated. |
 
 Real sites, with the extension on (text elements sampled after scrolling). Google Chrome 157 and Chrome for Testing 153 gave the
 same results. These are recorded, not pass/fail checks:
@@ -137,6 +138,10 @@ apple.com it was 0.07 to 0.2 s higher.
 - **Sprites** are classified as a whole image, not by the part that is drawn.
 - **First visit.** A site's first page is adapted after one detection pass at DOMContentLoaded, which can briefly show
   the light page. After that, it starts at `document_start`.
+- **JavaScript-switched themes on a light system.** With **Always** on a light system, a site that picks its theme
+  in JavaScript from `matchMedia` gets this extension's conversion of its light theme, not its own dark theme. An
+  extension can't change the appearance Chrome reports to the page. Set macOS to Dark: the site then uses its own
+  theme and the extension leaves it alone.
 - **Frames that look dark**, such as some consent dialogs, are not adapted inside.
 - **Timing.** Once on stripe.com (Chrome for Testing 153), a button's text was checked before a late style change
   settled and stayed white on a light button. It did not happen in the Chrome 157 run.

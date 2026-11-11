@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.1 — 2026-11-11
+
+Sites that already have their own automatic light/dark theme.
+
+- Fixed: a site that applies its dark theme after load (for example a class set by the app after hydration) and paints
+  its background on a full-page wrapper such as `#app` was not recognised as having turned dark. The extension stayed on
+  over the site's own dark theme and brightened its borders. Theme switches are now detected from full-page wrappers
+  too, and those wrappers are watched for class and `data-theme` changes.
+- Fixed: the per-site light/dark cache now records the system appearance. A "light" verdict recorded in light mode no
+  longer starts the extension early in dark mode, on sites that follow the system appearance themselves.
+- New: rules inside `@media (prefers-color-scheme: dark)` are kept exactly as the author wrote them. With **Runs:
+  Always** on a light system, those rules are switched on, so sites with their own dark CSS get their own dark design
+  rather than a conversion of their light theme.
+- Tests: three auto-theme fixtures and six end-to-end checks.
+
 ## 1.0.0 — 2026-11-11
 
 First public release.

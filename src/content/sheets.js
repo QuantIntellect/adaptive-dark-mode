@@ -31,6 +31,17 @@
   }
 
   const PRINT_ONLY = /^\s*print\s*$/i;
+  const AUTHOR_DARK = /prefers-color-scheme\s*:\s*dark/i;
+  const OS_DARK = typeof root.matchMedia === 'function' ? root.matchMedia('(prefers-color-scheme: dark)') : { matches: false }; // Node (unit tests)
+  /** A media condition that selects the author's own dark design. */
+  const isAuthorDark = (m) => !!m && AUTHOR_DARK.test(m) && !/\bnot\b/i.test(m);
+  /**
+   * We only run while presenting the page dark. If the system is light, the
+   * author's dark rules don't match: switch them on by replacing the
+   * prefers-color-scheme test with an always-true one, so sites with their own
+   * dark CSS get their own dark design instead of our conversion.
+   */
+  const darkMedia = (m) => (isAuthorDark(m) && !OS_DARK.matches ? m.replace(/\(\s*prefers-color-scheme\s*:\s*dark\s*\)/gi, '(min-width: 0px)') : m);
 
   // ---------------------------------------------------------------------------
   // Source-text fallback. When a var() shorthand is followed by one of its own
@@ -223,12 +234,12 @@
         rules = sheet.cssRules;
       } catch (_) {
         const f = this.fetched.get(this.abs(sheet.href));
-        return 'xo|' + (f ? f.status : 'none');
+        return (OS_DARK.matches ? 'D' : 'L') + 'xo|' + (f ? f.status : 'none');
       }
       const n = rules.length;
       const last = n ? rules[n - 1] : null;
       const first = n ? rules[0] : null;
-      return `${sheet.disabled ? 1 : 0}|${n}|${sheet.media ? sheet.media.mediaText : ''}|${last ? last.selectorText || last.type : ''}|${first ? first.selectorText || first.type : ''}`;
+      return `${OS_DARK.matches ? 'D' : 'L'}${sheet.disabled ? 1 : 0}|${n}|${sheet.media ? sheet.media.mediaText : ''}|${last ? last.selectorText || last.type : ''}|${first ? first.selectorText || first.type : ''}`;
     }
 
     sync(r) {
@@ -347,14 +358,15 @@
         rules = fetched.sheet.cssRules;
         ctx.base = this.abs(src.href);
       }
+      const media = src.media ? src.media.mediaText : '';
+      if (isAuthorDark(media)) ctx.authorDark = true;
       let css = this.walk(rules, ctx);
       state.rules = ctx.rules;
       if (ctx.needsSource && !ctx.source) this.requestSource(src, fetched);
       if (!css) return '';
-      const media = src.media ? src.media.mediaText : '';
       if (media) {
         if (PRINT_ONLY.test(media)) return '';
-        css = `@media ${media}{${css}}`;
+        css = `@media ${darkMedia(media)}{${css}}`;
       }
       // Safari disables ADM while printing (WebKit commit f3a15c44e7).
       return ctx.ns.join('') + `@media screen{${css}}`;
@@ -438,8 +450,17 @@
       if (rule instanceof CSSMediaRule) {
         const m = rule.media.mediaText;
         if (PRINT_ONLY.test(m)) return '';
-        const inner = this.walk(rule.cssRules, ctx);
-        return inner ? `@media ${m}{${inner}}` : '';
+        // The author's own dark design: mirror it unchanged, so it keeps
+        // beating the (transformed) base rules it was written to override.
+        const prev = ctx.authorDark;
+        if (isAuthorDark(m)) ctx.authorDark = true;
+        let inner;
+        try {
+          inner = this.walk(rule.cssRules, ctx);
+        } finally {
+          ctx.authorDark = prev;
+        }
+        return inner ? `@media ${darkMedia(m)}{${inner}}` : '';
       }
       if (rule instanceof CSSSupportsRule) {
         const inner = this.walk(rule.cssRules, ctx);
@@ -485,6 +506,7 @@
         if (prop.charCodeAt(0) === 45 && prop.charCodeAt(1) === 45) {
           const raw = style.getPropertyValue(prop);
           let variants = model.defineVariants(prop, raw, ctx);
+          if (variants && ctx.authorDark) variants = model.passThroughVariants(prop, raw, ctx);
           if (variants) {
             if (!this.colorVars.has(prop)) {
               this.colorVars.add(prop);
@@ -518,7 +540,7 @@
         // the page's, so skipping an unchanged later rule (`.btn--ghost {
         // background: transparent }`) would let our override of an earlier
         // rule win the cascade.
-        out += `${prop}:${model.transformValue(value, role, ctx)}${imp};`;
+        out += `${prop}:${ctx.authorDark ? value : model.transformValue(value, role, ctx)}${imp};`;
       }
       if (pending) {
         let recovered = false;
@@ -526,7 +548,7 @@
           const v = style.getPropertyValue(sh);
           if (!v || !v.includes('var(')) continue;
           recovered = true;
-          out += `${sh}:${model.transformValue(v, T.roleOf(sh), ctx)}${style.getPropertyPriority(sh) === 'important' ? ' !important' : ''};`;
+          out += `${sh}:${ctx.authorDark ? v : model.transformValue(v, T.roleOf(sh), ctx)}${style.getPropertyPriority(sh) === 'important' ? ' !important' : ''};`;
         }
         if (!recovered) out += this.fromSource(style, ctx);
       }
@@ -564,12 +586,12 @@
         else if (f.status === 'pending' && ctx.state) ctx.state.pending = true;
       }
       if (!rules) return '';
-      let inner = this.walk(rules, { ...ctx, base: href });
-      if (!inner) return '';
       const media = rule.media && rule.media.mediaText;
+      let inner = this.walk(rules, { ...ctx, base: href, authorDark: ctx.authorDark || isAuthorDark(media) });
+      if (!inner) return '';
       if (media) {
         if (PRINT_ONLY.test(media)) return '';
-        inner = `@media ${media}{${inner}}`;
+        inner = `@media ${darkMedia(media)}{${inner}}`;
       }
       if (rule.supportsText) inner = `@supports ${rule.supportsText}{${inner}}`;
       if (rule.layerName) inner = `@layer ${rule.layerName}{${inner}}`;

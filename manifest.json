@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Adaptive Dark Mode",
   "short_name": "Adaptive Dark",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Presents light websites as dark while you browse in dark mode, keeping hue, contrast, logos and images right.",
   "homepage_url": "https://github.com/QuantIntellect/adaptive-dark-mode",
   "minimum_chrome_version": "121",

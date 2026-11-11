@@ -1,6 +1,6 @@
 {
   "name": "adaptive-dark-mode",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Light websites presented as dark while you browse in dark mode. A Chrome extension modelled on Safari 27.3 Adaptive Dark Mode.",
   "license": "MIT",

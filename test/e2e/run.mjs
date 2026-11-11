@@ -361,6 +361,56 @@ await settle(page, 2600);
 await shoot(page, 'spa-on');
 check('late-rendered SPA adapted', (await L('#panel')) < 0.08, await L('#panel'));
 
+console.log('\nsites with their own automatic light/dark theme');
+{
+  const own = {};
+  const same = (a, b) => fs.readFileSync(a).equals(fs.readFileSync(b));
+  const view = async (name) => {
+    const file = path.join(outDir, `${name}.png`);
+    await page.screenshot({ path: file });
+    return file;
+  };
+  const visit = async (f, scheme, ms = 2000) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto(`${base}/${f}.html`);
+    await page.waitForTimeout(ms);
+  };
+  const fixturesAuto = ['auto-media', 'auto-class', 'auto-late'];
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await configure({ mode: 'off' });
+  for (const f of fixturesAuto) {
+    await visit(f, 'dark');
+    own[f] = await view(`${f}-own-dark`);
+  }
+  await configure({ mode: 'system', scope: 'all', sites: {} });
+  for (const f of fixturesAuto) {
+    await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+    await visit(f, 'dark');
+    const s = await status(page);
+    check(`${f}: dark system → its own dark theme, untouched`, s && s.state === 'inactive' && same(await view(`${f}-dark-on`), own[f]), s && `${s.state}/${s.reason}`);
+  }
+  // A light verdict recorded under the light system must not start early in dark mode.
+  await sw.evaluate(() => chrome.storage.local.set({ verdicts: { '127.0.0.1': { v: 'light', s: 'light', t: Date.now() } } }));
+  await visit('auto-media', 'dark');
+  const cached = await status(page);
+  check('verdict from the other appearance: no early start', cached && !cached.timing.early && cached.state === 'inactive', cached && `${cached.state} early=${cached.timing.early}`);
+  // Always + light system, then the system turns dark while the page is open.
+  await configure({ mode: 'always', scope: 'all', sites: {} });
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await visit('auto-late', 'light');
+  const before = await status(page);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.waitForTimeout(2500);
+  const after = await status(page);
+  check('live switch to dark: steps aside for the site\'s own theme', before.state === 'active' && after.state === 'inactive' && same(await view('auto-late-switched'), own['auto-late']), `${before.state} → ${after.state}/${after.reason}`);
+  // Always + light system on a site with dark-mode CSS: use the author's dark design.
+  await visit('auto-media', 'light', 2500);
+  const lightSys = await status(page);
+  check('light system + Always: the site\'s own dark CSS is used', lightSys.state === 'active' && same(await view('auto-media-always-light'), own['auto-media']), lightSys.state);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await configure({ mode: 'system', scope: 'all', sites: {} });
+}
+
 console.log('\n"Try" offer (default settings)');
 await configure({ scope: 'ask', sites: {}, dismissed: {} });
 await sw.evaluate(() => chrome.storage.local.remove('verdicts'));

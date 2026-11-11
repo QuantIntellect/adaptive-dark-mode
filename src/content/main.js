@@ -82,7 +82,9 @@
     }
     const pol = S.policy(settings, topHost, darkMQ.matches);
     const cached = stored.verdicts && stored.verdicts[S.siteKey(location.hostname)];
-    if (pol.allowed && pol.wanted && topActive && cached && cached.v === 'light') {
+    // A site that follows the system appearance itself is light in light mode
+    // and dark in dark mode: only trust a verdict recorded under the current one.
+    if (pol.allowed && pol.wanted && topActive && cached && cached.v === 'light' && cached.s === schemeNow()) {
       timing.early = true;
       start();
     }
@@ -128,7 +130,9 @@
     try {
       scheme = ADM.detect.authorScheme();
       if (!scheme) {
-        canvasY = C.luminance(ADM.detect.canvasColor());
+        const surface = ADM.detect.pageSurface();
+        canvasY = C.luminance(surface.color);
+        watchWrappers(surface.wrappers);
         if (fullSample) sample = ADM.detect.sampleAppearance();
       }
     } finally {
@@ -178,11 +182,13 @@
     reevalTimer = setTimeout(() => evaluate(trigger), ms);
   }
 
+  const schemeNow = () => (darkMQ.matches ? 'dark' : 'light');
   let lastVerdictSaved = null;
   function saveVerdict(v) {
-    if (lastVerdictSaved === v) return;
-    lastVerdictSaved = v;
-    send({ type: 'adm:verdict', key: S.siteKey(location.hostname), v });
+    const s = schemeNow();
+    if (lastVerdictSaved === v + s) return;
+    lastVerdictSaved = v + s;
+    send({ type: 'adm:verdict', key: S.siteKey(location.hostname), v, s });
   }
 
   function activate(opts = {}) {
@@ -381,7 +387,7 @@
           continue;
         }
         if (name === 'style' && D.isOwnStyleWrite(target)) continue;
-        if (target === html || target === document.body) {
+        if (target === html || target === document.body || wrappers.has(target)) {
           if (ROOT_ATTRS.includes(name)) rootChanged = true;
         }
         restyled.add(target);
@@ -431,20 +437,41 @@
    * color-scheme <meta>. This watcher outlives the engine, so a site that
    * switches back to its light theme is picked up again after we turned off.
    */
+  /**
+   * Full-page wrappers (#app, #__next...) that paint the page background.
+   * Some apps switch theme there instead of on <html>/<body>.
+   */
+  const wrappers = new Set();
+  let rootWatcher = null;
+  function watchWrappers(list) {
+    for (const el of list) {
+      if (wrappers.has(el)) continue;
+      wrappers.add(el);
+      if (rootWatcher) rootWatcher.observe(el, { attributes: true, attributeFilter: ROOT_ATTRS });
+    }
+  }
+
   function watchRoot() {
     const html = document.documentElement;
     const mo = new MutationObserver((muts) => {
       let relevant = false;
       for (const m of muts) {
-        if (m.type === 'attributes') relevant = true;
-        else for (const n of m.addedNodes) if (n.nodeName === 'BODY' || n.nodeName === 'META') relevant = true;
+        if (m.type === 'attributes') {
+          if (m.attributeName === 'style' && D.isOwnStyleWrite(m.target)) continue;
+          // While active, <html>/<body> changes reach the engine's observer.
+          if (!engine || wrappers.has(m.target)) relevant = true;
+        } else if (!engine) {
+          for (const n of m.addedNodes) if (n.nodeName === 'BODY' || n.nodeName === 'META') relevant = true;
+        }
       }
       if (document.body && !mo.bodyWatched) {
         mo.observe(document.body, { attributes: true, attributeFilter: ROOT_ATTRS });
         mo.bodyWatched = true;
       }
-      if (relevant && !engine) scheduleReevaluate();
+      if (relevant) scheduleReevaluate();
     });
+    rootWatcher = mo;
+    for (const el of wrappers) mo.observe(el, { attributes: true, attributeFilter: ROOT_ATTRS });
     mo.observe(html, { attributes: true, attributeFilter: ROOT_ATTRS, childList: true });
     if (document.head) mo.observe(document.head, { childList: true, subtree: true, attributes: true, attributeFilter: ['content'] });
     if (document.body) {
@@ -550,7 +577,12 @@
     lay.schedule();
   }, { capture: true, passive: true });
 
-  darkMQ.addEventListener('change', () => evaluate('system-appearance'));
+  darkMQ.addEventListener('change', () => {
+    // The author's dark rules are switched on or left to their media query
+    // depending on the system appearance (see darkMedia in sheets.js).
+    if (engine) engine.sheets.scheduleSync();
+    evaluate('system-appearance');
+  });
   if (window.navigation && typeof window.navigation.addEventListener === 'function') {
     window.navigation.addEventListener('navigatesuccess', () => scheduleReevaluate(600, 'navigate'));
   } else {
