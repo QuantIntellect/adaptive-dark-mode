@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Larder — light fixture</title>
+<!-- Cross-origin sheet: cssRules throws in the page, so the extension must fetch it. -->
+<link rel="stylesheet" href="http://127.0.0.1:4811/xo.css">
+<style>
+  @layer base, components;
+  :root {
+    --page: #e3f0ec;
+    --surface: #f7fcfa;
+    --ink: #0f2530;
+    --ink-2: #4b606c;
+    --line: #d5e3df;
+    --brand: #142937;
+    /* shadcn-style hsl channels and Bootstrap-style rgb channels */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --bs-body-bg-rgb: 255, 255, 255;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; background: var(--page); color: var(--ink); }
+  nav { display: flex; align-items: center; gap: 18px; padding: 12px 24px; background: #edf8f4; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; color: var(--ink); text-decoration: none; }
+  nav a { color: #394f5d; text-decoration: none; font-weight: 500; }
+  nav a.pill { background: var(--brand); color: #e8f6f1; padding: 7px 16px; border-radius: 99px; }
+  nav .spacer { flex: 1; }
+  nav .round { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #fff; box-shadow: 0 0 0 1px var(--line); }
+  .hero { position: relative; height: 330px; background: url(hero.jpg) center/cover; display: flex; align-items: flex-end; padding: 28px 32px; }
+  .hero h1 { margin: 0; color: #fff; font-size: 52px; line-height: 1; letter-spacing: -0.03em; text-shadow: 0 2px 12px rgb(0 0 0 / .45); }
+  .hero .greet { color: #fff; font-weight: 600; margin-bottom: 6px; }
+  .search { position: absolute; right: 32px; top: 28px; width: 380px; background: var(--surface); border-radius: 18px; padding: 14px; box-shadow: 0 10px 30px rgb(0 0 0 / .18); }
+  .search .box { background: #e8f4f0; border-radius: 12px; padding: 10px 12px; }
+  .search .label { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--ink-2); }
+  .search .place { font-weight: 600; color: var(--ink); }
+  .search .sub { font-size: 12px; color: #5e727d; }
+  .seg { display: flex; gap: 6px; margin-top: 10px; background: #e8f4f0; padding: 4px; border-radius: 99px; }
+  .seg span { padding: 6px 12px; border-radius: 99px; font-size: 13px; font-weight: 500; color: #3a505d; }
+  .seg .on { background: var(--brand); color: #def3ed; }
+  .chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .chip { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; box-shadow: 0 0 0 1px var(--line); background: #fff; color: #33464f; }
+  .chip.lime { background: #ceee56; color: #213312; box-shadow: none; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 24px; }
+  .card { background: var(--surface); border-radius: 16px; padding: 16px; box-shadow: 0 0 0 1px #e5e5e5, 0 1px 3px rgb(0 0 0 / .08); }
+  .card h2 { margin: 0 0 8px; font-size: 16px; }
+  .muted { color: #627781; font-size: 13px; }
+  .badge { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 12px; }
+  .teal { background: #48a096; } .blue { background: #354af5; } .orange { background: #ef8456; } .magenta { background: #c03fa8; }
+  .label-green { color: #2e6d4a; font-weight: 600; }
+  .tag { font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 2px 6px; border-radius: 5px; background: #e0e8f7; color: #2a3eec; }
+  .dark-card { background: #1a3a48; color: #f2fefb; border-radius: 16px; padding: 16px; }
+  .dark-card .sub { color: #a5b8ba; }
+  .btn { display: inline-block; padding: 9px 16px; border-radius: 10px; font-weight: 600; text-decoration: none; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-ghost { background: transparent; color: #1d4ed8; box-shadow: inset 0 0 0 1px #c7d2fe; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #e5e7eb; }
+  tbody tr:nth-child(even) { background: #f3f4f6; }
+  a { color: #285bde; }
+  .gradient-banner { background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%); border-radius: 16px; padding: 18px; }
+  .gradient-text { font-size: 28px; font-weight: 800; background: linear-gradient(90deg, #111827, #4b5563); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .menu { position: relative; display: inline-block; }
+  .menu .dropdown { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 6px; min-width: 160px; box-shadow: 0 8px 24px rgb(0 0 0 / .12); z-index: 3; }
+  .menu:hover .dropdown { display: block; }
+  .dropdown a { display: block; padding: 6px 10px; color: #222; text-decoration: none; border-radius: 6px; }
+  .dropdown a:hover { background: #f1f5f9; }
+  .mbm { mix-blend-mode: multiply; }
+  .tw { --tw-bg-opacity: 1; background-color: rgb(255 255 255 / var(--tw-bg-opacity)); --tw-text-opacity: 1; color: rgb(17 24 39 / var(--tw-text-opacity)); border-radius: 12px; padding: 12px; box-shadow: 0 0 0 1px rgb(0 0 0 / .08); }
+  .shad { background: hsl(var(--card)); color: hsl(var(--card-foreground)); border-radius: 12px; padding: 12px; border: 1px solid hsl(214 32% 91%); }
+  .bs { background-color: rgba(var(--bs-body-bg-rgb), 1); border-radius: 12px; padding: 12px; border: 1px solid #dee2e6; }
+  .texture { background: url(paper.png); border-radius: 12px; padding: 30px 16px; min-height: 200px; }
+  .icon-bg { display: inline-block; width: 32px; height: 32px; background: url(icon-dark.png) center/contain no-repeat; vertical-align: middle; }
+  .author-managed { color-scheme: light dark; background: light-dark(#ffffff, #112233); color: light-dark(#111111, #ddeeff); border-radius: 12px; padding: 12px; }
+  footer { background: #1f2937; color: #e5e7eb; padding: 24px; border-top: 4px solid #374151; }
+  footer a { color: #93c5fd; }
+  @layer components { .layered { background: #fafafa; color: #333; padding: 10px; border-radius: 10px; } }
+  @media (min-width: 600px) { .media-rule { background: #fffbea; color: #5c4a00; padding: 10px; border-radius: 10px; } }
+  @supports (display: grid) { .supports-rule { background: #f0fdf4; color: #14532d; padding: 10px; border-radius: 10px; } }
+  .full { grid-column: 1 / -1; }
+  .ink { color: #222222; }
+  .dark-band { background: #0b0f14; color: #e5e7eb; min-height: 1000px; padding: 40px 24px; }
+  /* the site's own dark theme, switched by a class on <html> */
+  html.site-dark body { background: #101418; color: #e6e6e6; }
+  /* cascade: an unchanged later rule must still win over an earlier transformed one */
+  .btn-base { --btn-bg: #533afd; background-color: var(--btn-bg); color: #fff; padding: 6px 12px; border-radius: 8px; display: inline-block; }
+  .btn-ghost { background-color: transparent; color: #1f2937; }
+  /* variables: a later, unchanged (vivid) definition must override an earlier transformed one */
+  :root { --chip: #ffffff; }
+  .chip-red { --chip: #ff0000; }
+  .chip-box { background: var(--chip); padding: 6px 12px; border-radius: 8px; display: inline-block; }
+  .pill-dark { display: inline-block; background: #0b1f29; color: #e8f6f1; padding: 4px 12px; border-radius: 99px; font-size: 13px; }
+  /* var() shorthand followed by its own longhand: CSSOM loses the shorthand text */
+  .var-sh { background: linear-gradient(#ffffff, var(--fade-to, #f4f4f5)); background-repeat: no-repeat; color: #222; border-radius: 12px; padding: 12px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+  <nav>
+    <a class="brand" href="#">
+      <svg width="28" height="28" viewBox="0 0 28 28" id="logo-svg"><rect width="28" height="28" rx="7" fill="#0f2530"/><path d="M10 6v16M7 6v5a3 3 0 0 0 6 0V6M19 6c-2.5 2-2.5 6.5 0 8v8" stroke="#e8f8f4" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+      Larder
+    </a>
+    <a class="pill" href="#" id="plan-pill">Cook</a>
+    <a href="#">Recipes</a>
+    <a href="#">Pantry</a>
+    <div class="menu"><a href="#">Seasonal ▾</a><div class="dropdown"><a href="#">Spring</a><a href="#">Winter</a></div></div>
+    <span class="spacer"></span>
+    <span class="round"><svg width="18" height="18" viewBox="0 0 24 24" id="bell"><path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6V11a6 6 0 0 0-5-5.9V4a1 1 0 1 0-2 0v1.1A6 6 0 0 0 6 11v5l-2 2v1h16v-1l-2-2Z" fill="#1f2937"/></svg></span>
+  </nav>
+
+  <section class="hero">
+    <div>
+      <div class="greet" id="hero-greet">Tonight, for two</div>
+      <h1 id="hero-title">What’s for<br>dinner?</h1>
+    </div>
+    <div class="search">
+      <div class="box"><div class="label">COOK WITH</div><div class="place">Tomatoes, basil</div><div class="sub">From your pantry</div></div>
+      <div class="box" style="margin-top:8px"><div class="label">READY IN</div><div class="place">Under 30 minutes</div><div class="sub">Serves 2</div></div>
+      <div class="seg"><span class="on" id="leave-now">Any diet</span><span>Vegetarian</span><span>Vegan</span></div>
+      <div class="chips"><span class="chip lime" id="lime-chip">Quick</span><span class="chip">One pot</span><span class="chip">No oven</span></div>
+    </div>
+  </section>
+
+  <main>
+    <div class="xo-panel full" id="xo-panel"><span class="ink" id="stale-ink">Text colored by this page, on a card colored by a cross-origin sheet that arrives late.</span></div>
+    <div class="card" id="route-card">
+      <h2>Recipe of the day <span class="muted" style="float:right">Saved 2 days ago</span></h2>
+      <div class="row"><b style="font-size:26px">24</b><span class="muted">min</span> <span class="tag" id="tag">QUICK</span> <span style="margin-left:auto;font-weight:600">4 servings</span></div>
+      <div class="row" style="margin-top:8px"><span class="badge teal" id="badge-teal">V</span><span class="badge blue">GF</span><span class="badge orange">DF</span><span class="badge magenta">N</span></div>
+      <p class="muted">Ready in <span class="label-green" id="green-text">24 min</span> with 6 ingredients</p>
+      <p><a href="#" id="link">Read the full recipe</a> · <a class="btn btn-primary" href="#" id="primary-btn">Cook</a> <a class="btn btn-ghost" href="#">Share</a></p>
+    </div>
+
+    <div class="dark-card" id="dark-card">
+      <h2 style="margin:0 0 8px">Pantry · Running low</h2>
+      <div>Olive oil <span class="sub" id="dark-sub">Half a bottle · reorder Friday</span></div>
+      <div>Basmati rice <span class="sub">200 g left</span></div>
+      <p style="margin:10px 0 0"><span class="pill-dark" id="card-pill">Synced</span></p>
+    </div>
+
+    <div class="card">
+      <h2>Images</h2>
+      <div class="row">
+        <img src="logo-bw.png" width="120" height="40" alt="ACME" id="img-logo">
+        <img src="icon-dark.png" width="40" height="40" alt="" id="img-icon">
+        <img src="icon-mono.svg" width="32" height="32" alt="" id="img-svg-mono">
+        <img src="icon-color.svg" width="32" height="32" alt="" id="img-svg-color">
+        <img src="product.png" width="80" height="80" alt="" id="img-product">
+        <img src="product.png" width="80" height="80" alt="" class="mbm" id="img-multiply">
+        <span class="icon-bg" id="bg-icon"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Chart (canvas) and inline SVG</h2>
+      <div class="row">
+        <canvas id="chart" width="220" height="110"></canvas>
+        <svg id="svg-chart" width="220" height="110" viewBox="0 0 220 110">
+          <line x1="20" y1="90" x2="210" y2="90" stroke="#333"/>
+          <rect x="30" y="40" width="30" height="50" fill="#3b82f6"/><rect x="80" y="20" width="30" height="70" fill="#22c55e"/><rect x="130" y="55" width="30" height="35" fill="#f97316"/>
+          <text x="30" y="104" font-size="10" fill="#111" id="svg-label">Mon</text><text x="80" y="104" font-size="10" fill="#111">Tue</text><text x="130" y="104" font-size="10" fill="#111">Wed</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card full">
+      <h2>Table</h2>
+      <table>
+        <thead><tr><th>Ingredient</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Tomatoes</td><td>400 g</td><td style="color:#15803d">In stock</td></tr>
+          <tr><td>Basil</td><td>1 bunch</td><td style="color:#b45309">Low</td></tr>
+          <tr><td bgcolor="#fff7cc" id="bgcolor-cell">Garlic</td><td><font color="#333333" id="font-color">3 cloves</font></td><td>Fresh</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="gradient-banner" id="gradient">
+      <div class="gradient-text" id="gradient-text">Cook smarter weeknights</div>
+      <p class="muted">A light gradient banner with gradient-clipped text.</p>
+    </div>
+
+    <div class="card" id="inline-card" style="background:#ffffff;color:#333333;border:1px solid #e5e5e5">
+      <h2>Inline styles</h2>
+      <p style="color:#666">Inline color on a paragraph.</p>
+      <div style="--accent-bg:#f1f5f9; background: var(--accent-bg); padding:8px; border-radius:8px" id="inline-var">Inline custom property used as background.</div>
+    </div>
+
+    <div class="tw" id="tw-card">Tailwind-style utility with <code>--tw-bg-opacity</code>.</div>
+    <div class="shad" id="shad-card">shadcn-style <code>hsl(var(--card))</code> card.</div>
+    <div class="bs" id="bs-card">Bootstrap-style <code>rgba(var(--bs-body-bg-rgb), 1)</code>.</div>
+    <div class="card full" id="cascade-card">
+      <span class="btn-base btn-ghost" id="ghost-btn">Ghost button</span>
+      <span class="chip-box chip-red" id="red-chip">Red chip</span>
+      <span class="chip-box" id="white-chip">Default chip</span>
+      <canvas id="deco-canvas" width="240" height="60"></canvas>
+      <iframe id="overlay-frame" title="overlay" style="border:0;width:240px;height:60px;vertical-align:middle" srcdoc="<p style='margin:0;padding:8px;font:13px system-ui'>Transparent iframe content</p>"></iframe>
+    </div>
+    <div class="var-sh" id="var-sh">var() shorthand followed by a longhand (Wikipedia pattern).</div>
+    <div class="xo-sh" id="xo-sh">Same pattern, from the cross-origin sheet.</div>
+    <div class="xo-card" id="xo-card">Card styled only by a cross-origin style sheet.</div>
+    <div class="layered" id="layered">@layer components rule.</div>
+    <div class="media-rule" id="media-rule">@media rule (warm note).</div>
+    <div class="supports-rule" id="supports-rule">@supports rule (success note).</div>
+    <div class="author-managed" id="author-managed">This box declares <code>color-scheme: light dark</code>: it is the author's own dark design and must not be touched.</div>
+    <div class="texture full" id="texture"><h2>Tiled paper texture</h2><p class="muted">A light tiled texture on a large box.</p></div>
+    <div class="card" id="cssinjs-card">CSS-in-JS: this card is styled by insertRule after load.</div>
+    <x-widget id="widget"></x-widget>
+    <div class="card full">
+      <h2>Form controls</h2>
+      <div class="row"><input placeholder="Search recipes" id="input"> <select><option>Any course</option></select> <label><input type="checkbox" checked> Vegetarian</label> <button>Go</button></div>
+    </div>
+  </main>
+
+  <section class="dark-band" id="dark-band"><h2>A viewport-tall dark band</h2><p>Scrolling into it must not switch Adaptive Dark Mode off.</p></section>
+
+  <footer id="footer">
+    <b>Larder Kitchen</b> · <a href="#">Accessibility</a> · <a href="#">Contact</a> <a class="pill" href="#" id="footer-pill" style="background:#142937;color:#e8f6f1;padding:6px 14px;border-radius:99px;text-decoration:none">Start cooking</a>
+    <p style="color:#9ca3af;margin:6px 0 0">Footer is already dark and must stay dark.</p>
+  </footer>
+
+<script>
+  // CSS-in-JS: rules inserted with insertRule (invisible to MutationObserver).
+  const sheet = document.head.appendChild(document.createElement('style')).sheet;
+  setTimeout(() => {
+    sheet.insertRule('.cssinjs-on { background: #ffffff !important; color: #1f2937 !important; box-shadow: 0 0 0 1px #e5e7eb; }', 0);
+    document.getElementById('cssinjs-card').classList.add('cssinjs-on');
+  }, 300);
+
+  // Shadow DOM component with its own styles.
+  customElements.define('x-widget', class extends HTMLElement {
+    connectedCallback() {
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>.w{background:#ffffff;color:#222;border:1px solid #ddd;border-radius:12px;padding:12px} .w b{color:#0f766e}</style><div class="w" part="w">Shadow DOM widget with <b>its own styles</b>.</div>`;
+    }
+  });
+
+  // Decorative full-bleed canvas (like a WebGL hero gradient): not a chart.
+  const dc = document.getElementById('deco-canvas').getContext('2d');
+  const grd = dc.createLinearGradient(0, 0, 240, 0);
+  grd.addColorStop(0, '#ffd1e8'); grd.addColorStop(1, '#c7d2fe');
+  dc.fillStyle = grd; dc.fillRect(0, 0, 240, 60);
+
+  // Canvas chart drawn dark-on-transparent.
+  const c = document.getElementById('chart');
+  const g = c.getContext('2d');
+  g.strokeStyle = '#333'; g.lineWidth = 1; g.beginPath(); g.moveTo(10, 95); g.lineTo(210, 95); g.stroke();
+  g.strokeStyle = '#2563eb'; g.lineWidth = 2; g.beginPath();
+  [80, 60, 70, 40, 50, 25, 35].forEach((y, i) => (i ? g.lineTo(15 + i * 30, y) : g.moveTo(15, y)));
+  g.stroke();
+  g.fillStyle = '#111'; g.font = '10px sans-serif'; g.fillText('Cooked per week', 12, 12);
+</script>
+</body>
+</html>

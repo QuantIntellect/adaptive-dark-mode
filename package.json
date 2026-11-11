@@ -1,0 +1,32 @@
+{
+  "name": "adaptive-dark-mode",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Light websites presented as dark while you browse in dark mode. A Chrome extension modelled on Safari 27.3 Adaptive Dark Mode.",
+  "license": "MIT",
+  "homepage": "https://github.com/QuantIntellect/adaptive-dark-mode#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QuantIntellect/adaptive-dark-mode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/QuantIntellect/adaptive-dark-mode/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "dark-mode",
+    "manifest-v3",
+    "accessibility",
+    "wcag",
+    "color-scheme"
+  ],
+  "scripts": {
+    "test": "node --test test/unit/*.test.js",
+    "e2e": "node test/e2e/run.mjs",
+    "pack": "node scripts/pack.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.56.0"
+  }
+}

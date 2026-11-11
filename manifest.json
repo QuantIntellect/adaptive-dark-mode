@@ -1,0 +1,80 @@
+{
+  "manifest_version": 3,
+  "name": "Adaptive Dark Mode",
+  "short_name": "Adaptive Dark",
+  "version": "1.0.0",
+  "description": "Presents light websites as dark while you browse in dark mode, keeping hue, contrast, logos and images right.",
+  "homepage_url": "https://github.com/QuantIntellect/adaptive-dark-mode",
+  "minimum_chrome_version": "121",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Adaptive Dark Mode",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/page-hook.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/shared/color.js",
+        "src/shared/transform.js",
+        "src/shared/settings.js",
+        "src/shared/imageclass.js",
+        "src/content/dom.js",
+        "src/content/detect.js",
+        "src/content/sheets.js",
+        "src/content/inline.js",
+        "src/content/images.js",
+        "src/content/layout.js",
+        "src/content/prompt.js",
+        "src/content/main.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true
+    }
+  ],
+  "commands": {
+    "toggle-site": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Toggle Adaptive Dark Mode for the current site"
+    }
+  }
+}

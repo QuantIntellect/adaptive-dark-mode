@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <title>Adaptive Dark Mode</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="head">
+    <img src="../../icons/icon32.png" width="20" height="20" alt="">
+    <h1>Adaptive Dark Mode</h1>
+  </header>
+
+  <section class="group">
+    <div class="row">
+      <div class="grow">
+        <div class="host" id="host">This page</div>
+        <div class="status"><span class="dot" id="dot"></span><span id="status">Checking…</span></div>
+      </div>
+      <label class="switch" title="Use Adaptive Dark Mode on this site">
+        <input type="checkbox" id="siteToggle" aria-label="Use on this site"><span></span>
+      </label>
+    </div>
+    <button class="try" id="tryBtn" hidden>Try on this page</button>
+    <div class="stats" id="stats" hidden></div>
+  </section>
+
+  <section class="group">
+    <div class="row">
+      <div class="grow">
+        <div class="label">Use on all bright sites</div>
+        <div class="hint">Off: offer “Try” like Safari does</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="scopeAll" aria-label="Use on all bright sites"><span></span></label>
+    </div>
+    <div class="row col">
+      <div class="label">Runs</div>
+      <div class="seg" id="mode" role="radiogroup" aria-label="When it runs">
+        <button data-v="system" title="Only while the system appearance is dark (Safari behavior)">Follow system</button>
+        <button data-v="always">Always</button>
+        <button data-v="off">Off</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="row col">
+      <div class="label">Darkness</div>
+      <div class="seg" id="depth" role="radiogroup" aria-label="Darkness">
+        <button data-v="soft"><i style="background:#333333"></i>Soft</button>
+        <button data-v="standard"><i style="background:#1e1e1e"></i>Standard</button>
+        <button data-v="deep"><i style="background:#141414"></i>Deep</button>
+        <button data-v="oled"><i style="background:#000000"></i>Black</button>
+      </div>
+    </div>
+    <div class="row col">
+      <div class="label">Text contrast</div>
+      <div class="seg" id="contrast" role="radiogroup" aria-label="Text contrast">
+        <button data-v="4.5">4.5:1 · Safari</button>
+        <button data-v="7">7:1 · High</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="group">
+    <label class="row check"><span>Adapt logos and icons</span><input type="checkbox" id="images"></label>
+    <label class="row check"><span>Keep surface edges visible</span><input type="checkbox" id="hairlines"></label>
+    <label class="row check"><span>Keep charts on light islands</span><input type="checkbox" id="canvasIslands"></label>
+    <label class="row check"><span>Offer “Try” on bright pages</span><input type="checkbox" id="prompt"></label>
+  </section>
+
+  <footer>
+    <a href="#" id="openOptions">Sites &amp; quirks…</a>
+    <span class="kbd" id="shortcut">⌥⇧D toggles this site</span>
+  </footer>
+
+  <script src="../shared/settings.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

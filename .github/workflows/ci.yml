@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Unit tests
+        run: npm test
+      - name: Validate manifest and referenced files
+        run: |
+          node -e '
+            const fs = require("fs");
+            const m = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
+            const files = [
+              ...m.content_scripts.flatMap((c) => c.js),
+              m.background.service_worker,
+              m.action.default_popup,
+              m.options_ui.page,
+              ...Object.values(m.icons),
+            ];
+            const missing = files.filter((f) => !fs.existsSync(f));
+            if (missing.length) { console.error("missing:", missing); process.exit(1); }
+            console.log(`manifest ${m.version}: ${files.length} files present`);
+          '
+      - name: Package
+        run: npm run pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adaptive-dark-mode
+          path: dist/*.zip

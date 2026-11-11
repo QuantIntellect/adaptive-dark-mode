@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Adaptive Dark Mode — Sites &amp; quirks</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <img src="../../icons/icon48.png" width="40" height="40" alt="">
+      <div>
+        <h1>Adaptive Dark Mode</h1>
+        <p class="lede">Presents light websites as dark, the way Safari 27.3 does: it adapts colors by role, keeps hues, aims for 4.5:1 text contrast, and leaves photos, video and canvas alone.</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>Your sites</h2>
+      <p class="hint">Sites you turned on with “Try” or the toolbar switch, and sites you turned off.</p>
+      <div class="table" id="sites"></div>
+      <form class="add" id="addSite">
+        <input id="addHost" placeholder="example.com" autocomplete="off" aria-label="Site">
+        <select id="addValue" aria-label="Setting">
+          <option value="on">Always adapt</option>
+          <option value="off">Never adapt</option>
+        </select>
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Quirks</h2>
+      <p class="hint">Some sites need special handling, as in Safari: turn the mode off for a site, force the
+        color-preserving inversion on specific elements, or keep elements exactly as authored. Selectors are CSS selectors.</p>
+      <div class="table" id="quirks"></div>
+      <form class="add quirk-add" id="addQuirk">
+        <input id="qHost" placeholder="example.com" autocomplete="off" aria-label="Site">
+        <label class="inline"><input type="checkbox" id="qDisable"> Disable</label>
+        <input id="qInvert" placeholder="Invert: .chart img, .logo" autocomplete="off" aria-label="Elements to invert">
+        <input id="qPreserve" placeholder="Preserve: .map, .player" autocomplete="off" aria-label="Elements to preserve">
+        <button type="submit">Save</button>
+      </form>
+      <details>
+        <summary>Built-in quirks</summary>
+        <div class="table" id="builtins"></div>
+      </details>
+    </section>
+
+    <section>
+      <h2>Data</h2>
+      <div class="buttons">
+        <button id="export">Export settings</button>
+        <label class="button">Import settings<input type="file" id="import" accept="application/json" hidden></label>
+        <button id="clearVerdicts">Forget page brightness cache</button>
+        <button id="reset" class="danger">Reset everything</button>
+      </div>
+      <p class="hint" id="dataNote"></p>
+    </section>
+
+    <section class="how">
+      <h2>How it works</h2>
+      <ol>
+        <li><b>Gates.</b> It runs only while the system is dark, on sites you allowed, unless the site declares
+          <code>color-scheme: light dark</code> or <code>light only</code>, or already renders dark.</li>
+        <li><b>Rule-level transform.</b> Every author rule that sets a color gets a mirrored override with the same
+          selector, in the same media/layer/supports context, placed after the page’s sheets. Light surfaces become dark
+          with a contrast-preserving luminance flip that keeps hue. Already-dark surfaces stay dark. Vivid colors keep
+          their meaning.</li>
+        <li><b>Backdrop pass.</b> For text in view it finds what actually paints behind it, the same idea as WebKit’s
+          two-phase backdrop paint, and pushes it to the contrast target. Text over photos keeps the author’s colors.</li>
+        <li><b>Images.</b> Simple black-and-white logos and dark monochrome SVG icons are inverted while keeping their hue.
+          Photos, video and canvas are left alone.</li>
+      </ol>
+      <p class="hint">Limits compared with Safari: an extension can’t hide its changes from page scripts, so computed
+        styles show the adapted colors. Image sprites are classified as a whole.</p>
+    </section>
+  </main>
+  <script src="../shared/settings.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

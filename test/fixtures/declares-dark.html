@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="color-scheme" content="light dark">
+<title>Declares light dark</title>
+<style>
+  body { margin: 0; padding: 32px; font: 16px system-ui, sans-serif; background: #ffffff; color: #111; }
+  .card { background: #f4f4f5; border-radius: 12px; padding: 16px; }
+  @media (prefers-color-scheme: dark) { body { background: #0b1020; color: #e7ecff; } .card { background: #182040; } }
+</style></head>
+<body><h1>Supports dark mode itself</h1><div class="card">This page declares <code>color-scheme: light dark</code>. Adaptive Dark Mode must not change a thing.</div></body></html>

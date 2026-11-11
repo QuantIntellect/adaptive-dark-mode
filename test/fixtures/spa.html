@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Late SPA</title>
+<style> body { margin: 0; font: 16px system-ui, sans-serif; } #app:empty { min-height: 0; } </style></head>
+<body><div id="app"></div>
+<script>
+  // An app shell that renders after a delay, like a client-side SPA.
+  setTimeout(() => {
+    const s = document.createElement('style');
+    s.textContent = 'body{background:#fafafa;color:#222} .panel{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:16px;margin:24px} .panel p{color:#555}';
+    document.head.appendChild(s);
+    document.getElementById('app').innerHTML = '<div class="panel" id="panel"><h1>Rendered late</h1><p>This content appeared 900 ms after load.</p></div>';
+  }, 900);
+</script></body></html>
