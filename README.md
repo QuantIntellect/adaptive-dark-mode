@@ -34,8 +34,9 @@ git clone https://github.com/QuantIntellect/adaptive-dark-mode.git
 Then choose the cloned folder with **Load unpacked**. To update later, run `git pull` and click the reload icon on
 the extension's card.
 
-**Chrome Web Store**: not listed yet. The submission kit (listing text, privacy answers, screenshots) is in
-[store/listing.md](store/listing.md).
+**Chrome Web Store**: submitted on 2026-11-11 and pending review. Item ID `ifkdflohhnohljpoijlpbdnhpfgmefjd`. Once approved
+it will be at <https://chromewebstore.google.com/detail/ifkdflohhnohljpoijlpbdnhpfgmefjd>. The submission kit (listing
+text, privacy answers, screenshots) is in [store/listing.md](store/listing.md).
 
 ## Use
 
