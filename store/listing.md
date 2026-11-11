@@ -26,8 +26,7 @@ Presents light websites as dark while you browse in dark mode, keeping hue, cont
 **Description**
 
 ```
-Adaptive Dark Mode turns bright websites dark while your system or Chrome is in dark mode. It changes colors without
-breaking the page.
+Adaptive Dark Mode turns bright websites dark while your system or Chrome is in dark mode. It changes colors without breaking the page.
 
 • Light surfaces become dark and dark text becomes light, with the hue kept.
 • Brand colors, badges and buttons keep their color. Links are lightened just enough to read.
@@ -37,16 +36,14 @@ breaking the page.
 • A small "This page is bright · Try" card lets you preview it per site, or turn it on for all bright sites.
 • Alt+Shift+D toggles the current site.
 
-Settings: darkness (Soft, Standard, Deep, Black), text contrast, logo and icon handling, surface edges, chart islands,
-per-site on/off and per-site quirks.
+Settings: darkness (Soft, Standard, Deep, Black), text contrast, logo and icon handling, surface edges, chart islands, per-site on/off and per-site quirks.
 
 Private by design: no account, no analytics, no server. Everything runs in your browser.
 
-Inspired by the Adaptive Dark Mode feature introduced in Safari 27.3. This is an independent project and is not
-affiliated with or endorsed by Apple. Open source: https://github.com/QuantIntellect/adaptive-dark-mode
+Inspired by the Adaptive Dark Mode feature introduced in Safari 27.3. This is an independent project and is not affiliated with or endorsed by Apple. Open source: https://github.com/QuantIntellect/adaptive-dark-mode
 ```
 
-**Category**: Make Chrome Yours → Accessibility
+**Category**: Accessibility (under Make Chrome Yours)
 
 **Language**: English
 
@@ -88,9 +85,9 @@ CSS text, never executed.
 
 **Data usage**
 
-The extension reads website content (colors, style sheets, image pixels) only to restyle the page locally, and never
-transmits it. If the form requires a category for data that is handled on-device, select **Website content** and
-state that it is not transmitted. Leave every other category unchecked.
+The Web Store's user data FAQ says data that is only processed or stored on the device must still be disclosed.
+Check **Website content** (colors, style sheets and image pixels are read to restyle the page) and **Web history**
+(the local brightness cache keeps site names with a timestamp). Leave every other category unchecked.
 
 Certify all three statements:
 

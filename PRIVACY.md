@@ -33,6 +33,10 @@ Everything is kept in `chrome.storage.local` on your device. Nothing is synced o
   light, dark, or declared its own color scheme, with the time it was recorded. It lets the extension start before a
   page finishes loading on your next visit. It holds at most about 3,000 sites, and the oldest entries are dropped.
 
+In the Chrome Web Store's data categories, the extension therefore handles **website content** (page colors, style
+sheets and image pixels, read to restyle the page) and **web history** (the site names in the brightness cache). Both
+are handled only on your device.
+
 Removing the extension deletes all of this. Settings and site choices can also be reset from the options page.
 
 ## Permissions
