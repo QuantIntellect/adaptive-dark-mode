@@ -1,6 +1,7 @@
-// Render the Chrome Web Store screenshots and the small promo tile.
+// Render the Chrome Web Store screenshots and the promo tiles.
 //
-//   node scripts/screenshots.mjs                 -> store/screenshots/*.png, store/promo-440x280.png
+//   node scripts/screenshots.mjs                 -> store/screenshots/*.png, store/promo-440x280.png,
+//                                                   store/promo-marquee-1400x560.png
 //   CHROME=/path/to/chrome node scripts/screenshots.mjs
 //
 // The pages are the three demo sites in store/demo/ (a product site, a
@@ -72,6 +73,14 @@ const GAP = 24;
 const COL_W = (VIEW.width - 2 * GAP) / 3;
 const MINI_CHROME = 30;
 const NARROW = { width: 600, height: Math.round(((H - WIN_TOP - MINI_CHROME) * 600) / COL_W) };
+// Marquee promo tile (1400x560): the name on the left, a before/after window on the right
+// that runs off the bottom edge. Its page is the same layout as screenshot 1, captured
+// in a taller viewport so it fills the window.
+const MW = 1400;
+const MH = 560;
+const MWIN = { left: 572, top: 72, width: MW - 572 - 64 };
+const MVIEW = { width: MWIN.width, height: MH - MWIN.top - CHROME_H };
+const MQ_PAGE = { width: PAGE.width, height: Math.ceil((MVIEW.height * PAGE.width) / MVIEW.width) };
 
 // --- browser -----------------------------------------------------------------------
 const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adm-shots-'));
@@ -180,6 +189,15 @@ shots.logosBefore = await shoot();
 await scrollTo('.rows', 150);
 shots.rowsBefore = await shoot();
 
+// Marquee: Tidewell again, original and adapted, in the taller viewport.
+await resize(MQ_PAGE);
+await visit('tidewell', false);
+shots.mqBefore = await shoot();
+const mqApp = await box('.app');
+await visit('tidewell', true);
+shots.mqAfter = await shoot();
+await resize(PAGE);
+
 // Close-up B: Fernway's article text (drop cap, link, pull quote).
 await visit('fernway', false);
 await scrollTo('.text', 40);
@@ -279,16 +297,17 @@ const CSS = `
 `;
 const lights = `<div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>`;
 
-function browser(site, inner, { extOn = false } = {}) {
+const WIN_AT = { left: MARGIN, top: WIN_TOP, width: VIEW.width, height: VIEW.height, bottom: H };
+function browser(site, inner, { extOn = false, at = WIN_AT } = {}) {
   const s = SITES[site];
-  return `<div class="win" style="left:${MARGIN}px;top:${WIN_TOP}px;width:${VIEW.width}px;height:${H - WIN_TOP + 20}px">
+  return `<div class="win" style="left:${at.left}px;top:${at.top}px;width:${at.width}px;height:${at.bottom - at.top + 20}px">
     <div class="tabs">${lights}<div class="tab">${s.favicon}<span>${s.title}</span>${stroke('M5 5l6 6M11 5l-6 6', 14)}</div></div>
     <div class="bar">
       ${stroke('M10 3L5 8l5 5')}${stroke('M6 3l5 5-5 5')}${stroke('M13 8a5 5 0 1 1-1.5-3.5M13 3v3h-3')}
       <div class="omni">${stroke('M4.5 7V5.5a3.5 3.5 0 0 1 7 0V7M3.5 7h9v6h-9z', 14)}${site}.example</div>
       <div class="ext${extOn ? ' on' : ''}"><img src="${icon}" alt=""></div>
     </div>
-    <div class="page" style="top:${CHROME_H}px;width:${VIEW.width}px;height:${VIEW.height}px">${inner}</div>
+    <div class="page" style="top:${CHROME_H}px;width:${at.width}px;height:${at.height}px">${inner}</div>
   </div>`;
 }
 const full = (buf) => `<img src="${png(buf)}" style="display:block;width:${VIEW.width}px;height:${VIEW.height}px">`;
@@ -422,6 +441,25 @@ await compose(
      <div style="font-size:26px;font-weight:700;letter-spacing:-0.02em">Adaptive Dark Mode</div>
    </div>`,
   { width: 440, height: 280 },
+);
+
+// Marquee promo tile (1400x560).
+const ms = MVIEW.width / PAGE.width;
+const mSplit = Math.round((mqApp.x + mqApp.w * 0.42) * ms);
+await compose(
+  'promo-marquee-1400x560',
+  `<div style="position:absolute;left:80px;top:0;bottom:0;width:${MWIN.left - 80 - 56}px;display:flex;flex-direction:column;justify-content:center">
+     <img src="${icon}" style="width:64px;height:64px;margin-bottom:24px">
+     <div style="font-size:60px;line-height:1.02;font-weight:700;letter-spacing:-0.03em">Adaptive<br>Dark Mode</div>
+     <div style="font-size:21px;line-height:1.42;color:#c7c7cc;margin-top:18px;letter-spacing:-0.006em">Light websites, presented as dark. Colors, logos and photos stay right.</div>
+     <div style="font-size:15px;color:#8e8e93;margin-top:20px">Free and open source · No account, no tracking</div>
+   </div>` +
+    browser(
+      'tidewell',
+      `${split(shots.mqBefore, shots.mqAfter, MVIEW.width, MVIEW.height, mSplit)}${handle(mSplit, Math.round(mqApp.y * ms) - 20, 18)}`,
+      { extOn: true, at: { ...MWIN, height: MVIEW.height, bottom: MH } },
+    ),
+  { width: MW, height: MH },
 );
 
 await context.close();

@@ -60,6 +60,7 @@ Made by ZharfAI · https://zharf.ai
 | Store icon (128×128) | `icons/icon128.png` |
 | Screenshots (1280×800) | `store/screenshots/1-before-after.png`, `2-every-site.png`, `3-details.png`, `4-popup.png`, `5-try-offer.png` |
 | Small promo tile (440×280) | `store/promo-440x280.png` |
+| Marquee promo tile (1400×560) | `store/promo-marquee-1400x560.png` |
 
 All screenshots are rendered by `npm run screenshots` from three demo sites in `store/demo/` (Tidewell, Fernway, Larder),
 served as `*.example` hosts. Their names and text are invented for the demo, and their photographs are AI-generated.

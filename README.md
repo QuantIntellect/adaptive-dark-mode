@@ -181,7 +181,7 @@ src/content/main.js          lifecycle and gates
 src/background/service-worker.js   settings writer, cross-origin CSS fetch, image decode, badge, shortcut
 src/popup, src/options       UI
 docs/how-safari-does-it.md   the research
-store/                       Chrome Web Store listing kit, screenshots, promo tile and the demo sites they show
+store/                       Chrome Web Store listing kit, screenshots, promo tiles and the demo sites they show
 test/unit, test/e2e, test/fixtures
 scripts/pack.mjs, scripts/screenshots.mjs
 ```
@@ -194,7 +194,7 @@ No build step. Edit, then click the reload icon on the extension's card at `chro
 npm install              # playwright-core, used only by the e2e suite and the screenshot script
 npm test                 # unit tests
 npm run e2e              # end-to-end checks on the fixtures (add -- --sites for real websites)
-npm run screenshots      # regenerate store/screenshots and the promo tile from the demo sites in store/demo
+npm run screenshots      # regenerate store/screenshots and the promo tiles from the demo sites in store/demo
 npm run pack             # dist/adaptive-dark-mode-<version>.zip (runtime files only)
 ```
 
