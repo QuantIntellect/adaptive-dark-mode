@@ -199,7 +199,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return true;
     case 'adm:dismiss':
       updateSettings((s) => {
-        s.dismissed[msg.key] = Date.now();
+        // The offer stays quiet for 7 days after "Not now" (the policy reads
+        // dismissed[key] as the time of the dismissal). An offer that timed
+        // out unanswered only rests for a day: the entry is back-dated so
+        // that it expires sooner, and the stored shape stays a timestamp.
+        const days = msg.days === 1 ? 1 : 7;
+        const at = Date.now() - (7 - days) * 24 * 3600 * 1000;
+        if (!(s.dismissed[msg.key] > at)) s.dismissed[msg.key] = at;
       });
       return;
     default:

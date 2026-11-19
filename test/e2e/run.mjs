@@ -37,7 +37,13 @@ function serve(port) {
     // The cross-origin sheet arrives late on purpose: its overrides land after
     // the first layout pass, which must then re-check what is on screen.
     if (port === 4811 && file.endsWith('xo.css')) setTimeout(send, 700);
-    else send();
+    else if (file.endsWith('late-body.html')) {
+      // Head now, body later: the empty-page window before content arrives.
+      const [head, rest] = fs.readFileSync(file, 'utf8').split('<!--FLUSH-->');
+      res.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' });
+      res.write(head + ' '.repeat(2048)); // past the parser's first-chunk buffering
+      setTimeout(() => res.end(rest), 1800);
+    } else send();
   });
   return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)));
 }
@@ -411,6 +417,66 @@ console.log('\nsites with their own automatic light/dark theme');
   await configure({ mode: 'system', scope: 'all', sites: {} });
 }
 
+console.log('\nfixes in 1.0.2');
+{
+  await configure({ mode: 'system', scope: 'all', sites: {}, quirks: {} });
+  const darkBg = (c) => {
+    const m = /rgba?\(([^)]+)\)/.exec(c || '');
+    if (!m) return false;
+    const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+    return (p.length < 4 || p[3] === 1) && Math.max(p[0], p[1], p[2]) < 60;
+  };
+
+  // #2: a drawing layer stacked over another canvas is not a chart.
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await page.goto(`${base}/canvas-layers.html`);
+  await settle(page, 1200);
+  const layers = await status(page);
+  const stones = await A('#stones', 'data-adm-canvas');
+  check('#2 drawing layer over another canvas gets no light island', layers && layers.state === 'active' && stones === null, layers && `${layers.state} island=${stones}`);
+  const plotChart = await A('#plot-chart', 'data-adm-canvas');
+  check('chart under a hover canvas keeps its light island', plotChart !== null && plotChart !== undefined, `island=${plotChart}`);
+
+  // A cookie-consent backdrop (fixed, black at 60% opacity) is not the page turning dark.
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await page.goto(`${base}/consent-overlay.html`);
+  await page.waitForTimeout(3200);
+  const consent = await status(page);
+  const shown = await page.evaluate(() => !!document.getElementById('consent'));
+  check('consent dialog backdrop does not switch it off', shown && consent && consent.state === 'active', consent && `${consent.state}/${consent.reason} trigger=${consent.timing && consent.timing.trigger}`);
+
+  // #1: first visit to a site the user wants adapted: dark before the content arrives.
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await page.goto(`${base}/late-body.html`, { waitUntil: 'commit' });
+  await page.waitForTimeout(900);
+  const blank = await page.evaluate(() => ({ bg: getComputedStyle(document.documentElement).backgroundColor, body: !!document.body }));
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(800);
+  const late = await status(page);
+  check('#1 first visit: page is dark before its content arrives', darkBg(blank.bg) && late && late.state === 'active' && late.timing.early === 'first-visit', { blank, state: late && late.state, early: late && late.timing.early });
+
+  // A dark page on its first visit: started early, then steps aside without a trace.
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await page.goto(`${base}/dark.html`);
+  await settle(page, 1200);
+  await shoot(page, 'dark-first-visit');
+  const firstDark = await status(page);
+  const leftDark = await page.evaluate(() => ({ sheets: document.adoptedStyleSheets.length, attrs: document.querySelectorAll('[data-adm-i],[data-adm-fg],[data-adm-bg],[data-adm-img],[data-adm-canvas]').length }));
+  const sameDark = fs.readFileSync(path.join(outDir, 'dark-first-visit.png')).equals(fs.readFileSync(path.join(outDir, 'dark-off.png')));
+  check('first visit to a dark page: steps aside, nothing left behind', firstDark && firstDark.state === 'inactive' && firstDark.reason === 'already-dark' && firstDark.timing.early === 'first-visit' && leftDark.sheets === 0 && leftDark.attrs === 0 && sameDark, { state: firstDark && `${firstDark.state}/${firstDark.reason}`, early: firstDark && firstDark.timing.early, leftDark, sameDark });
+
+  // Store users update straight from 1.0.0: its settings, and verdicts without an appearance.
+  await sw.evaluate(() => chrome.storage.local.set({
+    settings: { mode: 'system', scope: 'all', depth: 'standard', textContrast: 4.5, images: true, hairlines: true, canvasIslands: true, prompt: true, sites: {}, dismissed: {}, quirks: {} },
+    verdicts: { '127.0.0.1': { v: 'light', t: Date.now() - 86400000 } },
+  }));
+  await page.goto(`${base}/light.html`);
+  await page.waitForTimeout(1500);
+  const legacy = await status(page);
+  const resaved = await sw.evaluate(async () => (await chrome.storage.local.get('verdicts')).verdicts['127.0.0.1']);
+  check('data saved by 1.0.0: starts early, verdict re-saved with the appearance', legacy && legacy.state === 'active' && legacy.timing.early === true && resaved && resaved.s === 'dark', { state: legacy && legacy.state, early: legacy && legacy.timing.early, resaved });
+}
+
 console.log('\n"Try" offer (default settings)');
 await configure({ scope: 'ask', sites: {}, dismissed: {} });
 await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
@@ -429,6 +495,75 @@ const savedSites = await sw.evaluate(async () => (await chrome.storage.local.get
 check('clicking Try adapts the page and remembers the site', tried && tried.state === 'active' && savedSites['127.0.0.1'] === 'on', { state: tried && tried.state, sites: savedSites });
 await shoot(page, 'offer-applied', false);
 await configure({ scope: 'all', sites: {} });
+
+console.log('\npopup');
+{
+  const tabIdOf = (u) => sw.evaluate(async (x) => (await chrome.tabs.query({})).find((t) => t.url === x)?.id, u);
+  const pop = await context.newPage();
+  await pop.setViewportSize({ width: 360, height: 800 });
+  await pop.emulateMedia({ colorScheme: 'dark' });
+  const openPopup = async () => {
+    await pop.goto(`chrome-extension://${extensionId}/src/popup/popup.html?tab=${await tabIdOf(page.url())}`);
+    await pop.waitForTimeout(700);
+  };
+  // Chrome sizes the popup to its content and caps it at 600px.
+  const popHeight = () => pop.evaluate(() => Math.ceil(document.body.getBoundingClientRect().height));
+  const stored = async () => (await sw.evaluate(async () => (await chrome.storage.local.get('settings')).settings));
+
+  // Offer state (ask per site), the tallest default state.
+  await configure({ scope: 'ask', sites: {}, dismissed: {}, quirks: {} });
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await page.goto(`${base}/light.html`);
+  await page.waitForTimeout(1500);
+  await openPopup();
+  const hOffer = await popHeight();
+  const tryShown = await pop.evaluate(() => !document.getElementById('tryBtn').hidden);
+  await pop.screenshot({ path: path.join(outDir, 'popup-offer.png'), fullPage: true });
+  check('popup fits Chrome\'s 600px limit (offer state)', tryShown && hOffer <= 600, { hOffer, tryShown });
+  await pop.click('#tryBtn');
+  await page.waitForTimeout(1200);
+  const popTried = await status(page);
+  const afterTry = await stored();
+  check('popup "Try on this page" adapts and remembers the site', popTried && popTried.state === 'active' && afterTry.sites['127.0.0.1'] === 'on', { state: popTried && popTried.state, sites: afterTry.sites });
+
+  // Active state: "Something looks wrong?" → leave canvases unchanged, merged with the site's other quirks, and back.
+  await configure({ quirks: { '127.0.0.1': { forceInvert: '.not-on-this-page' } } });
+  await page.waitForTimeout(1200);
+  await openPopup();
+  const hActive = await popHeight();
+  const fixShown = await pop.evaluate(() => !document.getElementById('fix').hidden);
+  check('popup fits Chrome\'s 600px limit (active state)', fixShown && hActive <= 600, { hActive, fixShown });
+  await pop.click('#fix > summary');
+  await pop.screenshot({ path: path.join(outDir, 'popup-fix.png'), fullPage: true });
+  await pop.click('#fixCanvas');
+  await page.waitForTimeout(1500);
+  const q1 = (await stored()).quirks['127.0.0.1'];
+  const island1 = await A('#chart', 'data-adm-canvas');
+  const label1 = await pop.evaluate(() => document.getElementById('fixCanvasTitle').textContent);
+  await pop.click('#fixCanvas');
+  await page.waitForTimeout(1500);
+  const q2 = (await stored()).quirks['127.0.0.1'];
+  const island2 = await A('#chart', 'data-adm-canvas');
+  check('"Leave canvases unchanged" adds a canvas quirk beside the site\'s others, and undoes it',
+    q1 && q1.preserve === 'canvas' && q1.forceInvert === '.not-on-this-page' && island1 === null && /again/.test(label1) &&
+    q2 && !q2.preserve && q2.forceInvert === '.not-on-this-page' && island2 !== null,
+    { q1, q2, island1, island2, label1 });
+
+  // An unanswered offer rests for a day; "Not now" for a week.
+  const dis = await pop.evaluate(async () => {
+    const send = (m) => chrome.runtime.sendMessage(m).catch(() => {});
+    await send({ type: 'adm:dismiss', key: 'timeout.example', days: 1 });
+    await send({ type: 'adm:dismiss', key: 'notnow.example' });
+    await new Promise((r) => setTimeout(r, 500));
+    const { settings } = await chrome.storage.local.get('settings');
+    const pol = (h) => globalThis.ADM.settings.policy(settings, h, true);
+    return { timeoutAge: Date.now() - settings.dismissed['timeout.example'], notNowAge: Date.now() - settings.dismissed['notnow.example'], offerT: pol('timeout.example').offer, offerN: pol('notnow.example').offer };
+  });
+  const DAY = 864e5;
+  check('unanswered offer rests a day, "Not now" a week', Math.abs(dis.timeoutAge - 6 * DAY) < 60000 && dis.notNowAge < 60000 && !dis.offerT && !dis.offerN, dis);
+  await pop.close();
+  await configure({ scope: 'all', sites: {}, quirks: {}, dismissed: {} });
+}
 
 if (withSites) {
   console.log('\nreal sites');

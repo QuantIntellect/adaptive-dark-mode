@@ -67,6 +67,24 @@
   // ---------------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------------
+
+  /**
+   * Start before first paint (no white flash while the page loads) when the
+   * site is wanted and the cached verdict doesn't rule it out:
+   *   - verdict recorded under the current appearance: start if it was light,
+   *   - recorded under the other appearance: don't (a site that follows the
+   *     system is light in light mode and dark in dark mode),
+   *   - recorded by 1.0.0 (no appearance): start if it was light,
+   *   - no verdict yet: start in the top frame; the first decision turns it
+   *     off again if the page turns out to be dark, and the verdict is cached
+   *     from then on. (Embedded frames wait: ads and widgets come from ever
+   *     new hosts.)
+   */
+  function startEarly(cached) {
+    if (!cached) return isTop;
+    if (cached.s && cached.s !== schemeNow()) return false;
+    return cached.v === 'light';
+  }
   async function boot() {
     let stored = {};
     try {
@@ -82,10 +100,8 @@
     }
     const pol = S.policy(settings, topHost, darkMQ.matches);
     const cached = stored.verdicts && stored.verdicts[S.siteKey(location.hostname)];
-    // A site that follows the system appearance itself is light in light mode
-    // and dark in dark mode: only trust a verdict recorded under the current one.
-    if (pol.allowed && pol.wanted && topActive && cached && cached.v === 'light' && cached.s === schemeNow()) {
-      timing.early = true;
+    if (pol.allowed && pol.wanted && topActive && startEarly(cached)) {
+      timing.early = cached ? true : 'first-visit';
       start();
     }
     whenReady(() => {
@@ -199,7 +215,13 @@
       report();
       return;
     }
-    const run = () => start();
+    // The view transition runs `run` a frame later. A settings change that
+    // arrives in between ("Try" also remembers the site) may have started
+    // the engine already: never start a second one.
+    const run = () => {
+      if (engine) return;
+      start();
+    };
     if (opts.transition && document.startViewTransition && !reducedMotion.matches) {
       try {
         document.startViewTransition(run);
@@ -539,6 +561,8 @@
         });
       },
       onDismiss: () => send({ type: 'adm:dismiss', key }),
+      // Unanswered is not "Not now": ask again tomorrow, not in a week.
+      onTimeout: () => send({ type: 'adm:dismiss', key, days: 1 }),
     });
   }
 

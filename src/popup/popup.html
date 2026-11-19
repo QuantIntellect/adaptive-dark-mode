@@ -23,7 +23,21 @@
       </label>
     </div>
     <button class="try" id="tryBtn" hidden>Try on this page</button>
-    <div class="stats" id="stats" hidden></div>
+    <button class="try quiet" id="reloadBtn" hidden>Reload page</button>
+    <details class="fix" id="fix" hidden>
+      <summary>Something looks wrong?</summary>
+      <div class="fix-body">
+        <button class="fix-btn" id="fixCanvas">
+          <span class="fix-title" id="fixCanvasTitle">Leave canvases unchanged here</span>
+          <span class="fix-hint" id="fixCanvasHint">For drawing apps, games and charts</span>
+        </button>
+        <button class="fix-btn" id="fixOff">
+          <span class="fix-title">Turn off on this site</span>
+          <span class="fix-hint">Undo with the switch above</span>
+        </button>
+        <div class="stats" id="stats" hidden></div>
+      </div>
+    </details>
   </section>
 
   <section class="group">
@@ -64,10 +78,13 @@
   </section>
 
   <section class="group">
-    <label class="row check"><span>Adapt logos and icons</span><input type="checkbox" id="images"></label>
-    <label class="row check"><span>Keep surface edges visible</span><input type="checkbox" id="hairlines"></label>
-    <label class="row check"><span>Keep charts on light islands</span><input type="checkbox" id="canvasIslands"></label>
-    <label class="row check"><span>Offer “Try” on bright pages</span><input type="checkbox" id="prompt"></label>
+    <details class="tuning" id="tuning">
+      <summary class="row">Fine-tuning</summary>
+      <label class="row check"><span>Adapt logos and icons</span><input type="checkbox" id="images"></label>
+      <label class="row check"><span>Keep surface edges visible</span><input type="checkbox" id="hairlines"></label>
+      <label class="row check"><span>Keep charts on light islands</span><input type="checkbox" id="canvasIslands"></label>
+      <label class="row check"><span>Offer “Try” on bright pages</span><input type="checkbox" id="prompt"></label>
+    </details>
   </section>
 
   <footer>

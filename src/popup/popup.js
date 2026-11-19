@@ -64,8 +64,12 @@
 
     let text;
     let tone = '';
+    // No answer from the page: it was open before the extension was installed
+    // or updated (its old script is gone), or Chrome doesn't allow scripts here.
+    const reloadable = !status && /^https?:|^file:/.test(tab && tab.url);
+    $('reloadBtn').hidden = !reloadable;
     if (!status) {
-      text = /^https?:|^file:/.test(tab && tab.url) ? 'Reload the page to start' : 'Not available on this page';
+      text = reloadable ? 'Reload the page to start' : 'Not available on this page';
     } else {
       const key2 = status.state === 'active' ? 'active' : status.state === 'offer' ? 'offer' : status.reason;
       [text, tone] = REASONS[key2] || [status.reason, ''];
@@ -76,7 +80,13 @@
     const canTry = status && (status.state === 'offer' || (status.state === 'inactive' && status.reason === 'ask'));
     $('tryBtn').hidden = !canTry;
 
-    const st = status && status.state === 'active' ? status.stats || {} : null;
+    const active = !!status && status.state === 'active';
+    $('fix').hidden = !active;
+    const canvasKept = quirkList(S.lookup(settings.quirks, host)).includes('canvas');
+    $('fixCanvasTitle').textContent = canvasKept ? 'Adapt canvases again' : 'Leave canvases unchanged here';
+    $('fixCanvasHint').textContent = canvasKept ? 'Canvases are left as the site draws them' : 'For drawing apps, games and charts';
+
+    const st = active ? status.stats || {} : null;
     $('stats').hidden = !st;
     if (st) {
       const parts = [
@@ -102,6 +112,8 @@
     for (const id of ['images', 'hairlines', 'canvasIslands', 'prompt']) $(id).checked = !!settings[id];
   }
 
+  const quirkList = (q) => String((q && q.preserve) || '').split(',').map((t) => t.trim()).filter(Boolean);
+
   function bind() {
     $('siteToggle').addEventListener('change', (e) => {
       const key = S.siteKey(hostOf());
@@ -113,12 +125,60 @@
       });
     });
     $('tryBtn').addEventListener('click', async () => {
+      // Same as "Try" on the page: adapt now and remember the site.
       try {
         await chrome.tabs.sendMessage(tab.id, { type: 'adm:tryNow' }, { frameId: 0 });
       } catch (_) {
         /* page not scriptable */
       }
-      setTimeout(refreshStatus, 300);
+      const key = S.siteKey(hostOf());
+      if (key) {
+        save((s) => {
+          s.sites[key] = 'on';
+          delete s.dismissed[key];
+        });
+      } else {
+        setTimeout(refreshStatus, 300);
+      }
+    });
+    $('reloadBtn').addEventListener('click', async () => {
+      await chrome.tabs.reload(tab.id).catch(() => {});
+      window.close();
+    });
+    $('fixCanvas').addEventListener('click', () => {
+      const host = hostOf();
+      const key = S.siteKey(host);
+      if (!key) return;
+      save((s) => {
+        // Start from the entry that applies here (it may be a parent
+        // domain's) so its other quirks keep applying to this site.
+        const q = { ...(S.lookup(s.quirks, host) || {}) };
+        const list = quirkList(q);
+        const i = list.indexOf('canvas');
+        if (i === -1) list.push('canvas');
+        else list.splice(i, 1);
+        if (list.length) q.preserve = list.join(', ');
+        else delete q.preserve;
+        if (Object.keys(q).length) s.quirks[key] = q;
+        else delete s.quirks[key];
+      });
+    });
+    $('fixOff').addEventListener('click', () => {
+      const key = S.siteKey(hostOf());
+      if (key) save((s) => (s.sites[key] = 'off'));
+    });
+    const tuning = $('tuning');
+    try {
+      tuning.open = localStorage.getItem('adm:tuning') === 'open';
+    } catch (_) {
+      /* storage blocked */
+    }
+    tuning.addEventListener('toggle', () => {
+      try {
+        localStorage.setItem('adm:tuning', tuning.open ? 'open' : '');
+      } catch (_) {
+        /* storage blocked */
+      }
     });
     $('scopeAll').addEventListener('change', (e) => save((s) => (s.scope = e.target.checked ? 'all' : 'ask')));
     $('mode').addEventListener('click', (e) => {

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Canvas layers</title>
+  <!-- A drawing toy built from stacked canvases (sand below, stones above),
+       like paint.toys/zen-garden in issue #2. The stone layer is mostly
+       transparent with dark shapes and pointer-events: none. It must not get
+       a light "chart island", which would cover the sand. -->
+  <style>
+    body { margin: 0; font: 15px/1.5 system-ui, sans-serif; color: #1f2937; background: #f7f4ee; }
+    main { padding: 24px; }
+    .stage { position: relative; width: 640px; height: 400px; }
+    #sand { display: block; width: 640px; height: 400px; background: #e5d5c0; }
+    #stones { position: absolute; inset: 0; width: 640px; height: 400px; pointer-events: none; }
+    .plot { position: relative; width: 320px; height: 160px; margin-top: 24px; }
+    .plot canvas { position: absolute; inset: 0; width: 320px; height: 160px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Rake the sand</h1>
+    <p>The sand is one canvas; the stones are a second canvas layered above it.</p>
+    <div class="stage"><canvas id="sand" width="640" height="400"></canvas><canvas id="stones" width="640" height="400"></canvas></div>
+    <!-- A chart drawn dark-on-transparent, with a hover layer above it that
+         takes the pointer (as chart libraries do for crosshairs). The chart
+         below must keep its light island. -->
+    <div class="plot"><canvas id="plot-chart" width="320" height="160"></canvas><canvas id="plot-hover" width="320" height="160"></canvas></div>
+  </main>
+  <script>
+    const s = document.getElementById('sand').getContext('2d');
+    s.fillStyle = '#e5d5c0';
+    s.fillRect(0, 0, 640, 400);
+    s.strokeStyle = 'rgba(150, 130, 100, 0.5)';
+    for (let y = 10; y < 400; y += 12) { s.beginPath(); s.moveTo(0, y); s.lineTo(640, y); s.stroke(); }
+    const t = document.getElementById('stones').getContext('2d');
+    t.fillStyle = '#3e4a28';
+    for (const [x, y, r] of [[160, 140, 60], [420, 250, 80], [300, 90, 40]]) { t.beginPath(); t.arc(x, y, r, 0, Math.PI * 2); t.fill(); }
+    const p = document.getElementById('plot-chart').getContext('2d');
+    p.strokeStyle = '#333'; p.lineWidth = 1; p.beginPath(); p.moveTo(10, 140); p.lineTo(310, 140); p.stroke();
+    p.strokeStyle = '#1f2937'; p.lineWidth = 3; p.beginPath();
+    [120, 90, 100, 60, 75, 40, 50, 30].forEach((y, i) => (i ? p.lineTo(20 + i * 40, y) : p.moveTo(20, y)));
+    p.stroke();
+    p.fillStyle = '#111'; p.font = '12px sans-serif'; p.fillText('Loaves per week', 12, 16);
+    const h = document.getElementById('plot-hover').getContext('2d');
+    h.fillStyle = '#111'; h.beginPath(); h.arc(180, 75, 3, 0, Math.PI * 2); h.fill();
+  </script>
+</body>
+</html>

@@ -42,9 +42,10 @@
     }
     button:hover { background: rgb(255 255 255 / 0.14); }
     button:active { transform: scale(0.97); }
-    button:focus-visible { outline: 2px solid #0a84ff; outline-offset: 2px; }
-    button.primary { background: #0a84ff; color: #fff; }
-    button.primary:hover { background: #2b95ff; }
+    button:focus-visible { outline: 2px solid #409cff; outline-offset: 2px; }
+    /* White on #0066dd is 5.3:1 (the 4.5:1 text target this extension sets for pages). */
+    button.primary { background: #0066dd; color: #fff; }
+    button.primary:hover { background: #005bc5; }
     @media (prefers-reduced-motion: reduce) { .card { transition: opacity 120ms linear; transform: none; } }
   `;
 
@@ -58,6 +59,11 @@
     (document.body || document.documentElement).appendChild(hostEl);
   }
 
+  // Clicks in the first moments after a card appears are ignored: a quick
+  // second click meant for the previous card (or for the page under it)
+  // must not land on a button that has just taken its place.
+  const CLICK_GUARD_MS = 500;
+
   function render({ title, sub, buttons, autoHideMs, onTimeout }) {
     ensure();
     clearTimeout(hideTimer);
@@ -69,12 +75,14 @@
     shadow.querySelector('.title').textContent = title;
     shadow.querySelector('.sub').textContent = sub;
     const actions = shadow.querySelector('.actions');
+    const armedAt = performance.now() + CLICK_GUARD_MS;
     for (const b of buttons) {
       const el = document.createElement('button');
       el.textContent = b.label;
       if (b.primary) el.className = 'primary';
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (performance.now() < armedAt) return;
         b.onClick();
       });
       actions.appendChild(el);
@@ -104,7 +112,7 @@
     }, 260);
   }
 
-  function offer({ host, onTry, onDismiss }) {
+  function offer({ host, onTry, onDismiss, onTimeout }) {
     render({
       title: 'This page is bright',
       sub: `Try Adaptive Dark Mode on ${host}`,
@@ -113,7 +121,7 @@
         { label: 'Try', primary: true, onClick: onTry },
       ],
       autoHideMs: 15000,
-      onTimeout: onDismiss,
+      onTimeout: onTimeout || onDismiss,
     });
   }
 
@@ -123,7 +131,8 @@
       sub: `Remembered for ${host}`,
       buttons: [
         { label: 'Undo', onClick: () => { hide(); onUndo(); } },
-        { label: 'All bright sites', primary: true, onClick: () => { hide(); onAll(); } },
+        // Not the primary button: it takes the place where "Try" was.
+        { label: 'All bright sites', onClick: () => { hide(); onAll(); } },
       ],
       autoHideMs: 8000,
     });

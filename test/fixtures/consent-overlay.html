@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Consent overlay</title>
+  <!-- A bright article that shows a cookie-consent dialog after load, the
+       way Google's Funding Choices does: a fixed full-viewport root with a
+       black backdrop at 60% opacity, and overflow: hidden on <body>. The
+       backdrop is not the page turning dark. -->
+  <style>
+    body { margin: 0; font: 17px/1.6 Georgia, serif; color: #222; background: #fff; }
+    main { max-width: 680px; margin: 0 auto; padding: 32px 20px; }
+    .fc-root { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; }
+    .fc-overlay { position: fixed; inset: 0; background: #000; opacity: 0.6; }
+    .fc-dialog { position: relative; max-width: 420px; padding: 24px; border-radius: 12px; background: #fff; color: #111; font: 15px/1.5 system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Bread at home</h1>
+    <p>A good loaf needs flour, water, salt and time. Mix, rest, fold a few times over an hour, then leave the dough in the fridge overnight.</p>
+    <p>In the morning, shape it gently, let it rise until it springs back slowly, and bake it in a hot covered pot.</p>
+    <p>Let it cool for an hour before cutting; the crumb is still setting.</p>
+  </main>
+  <script>
+    setTimeout(() => {
+      const root = document.createElement('div');
+      root.className = 'fc-root';
+      root.id = 'consent';
+      root.innerHTML = '<div class="fc-overlay"></div><div class="fc-dialog" role="dialog" aria-modal="true"><p>This site asks for your consent to use cookies.</p><button>Consent</button></div>';
+      document.body.appendChild(root);
+      document.body.style.overflow = 'hidden';
+    }, 1200);
+  </script>
+</body>
+</html>

@@ -427,6 +427,12 @@
       if (bg && bg.a > 0 && !cv.hasAttribute('data-adm-canvas')) return;
       const pt = this.probePoint(cv);
       if (!pt) return void this.offscreen.add(cv);
+      // A layer of a drawing (rocks over sand, a brush preview over the
+      // picture) is not a chart: an island would cover the layer beneath.
+      if (layeredOverMedia(cv, pt, rect)) {
+        if (cv.hasAttribute('data-adm-canvas')) D.setAdjust(cv, 'data-adm-canvas', '--adm-canvas', null);
+        return;
+      }
       const hit = this.backdrop(cv, pt, false);
       if (hit.media || !hit.color) return;
       const model = this.ctx.model;
@@ -449,6 +455,31 @@
       D.setAdjust(cv, 'data-adm-canvas', '--adm-canvas', C.format(island));
       this.ctx.stats.canvas = (this.ctx.stats.canvas || 0) + 1;
     }
+  }
+
+  /**
+   * Whether this canvas is drawn over another image, video or canvas that
+   * covers most of its box. A canvas that takes the pointer is in the hit
+   * stack, and backdrop() already sees media beneath it. One that doesn't
+   * (pointer-events: none, typical of overlay layers) is missing from the
+   * stack, so backdrop() falls back to its ancestors and would miss the
+   * sibling below: look for it here. Only media earlier in document order
+   * count (painted below, without z-index): a hover layer above a chart must
+   * not take the chart's island away.
+   */
+  function layeredOverMedia(cv, pt, rect) {
+    const scope = cv.getRootNode();
+    const stack = (typeof scope.elementsFromPoint === 'function' ? scope : document).elementsFromPoint(pt.x, pt.y);
+    if (stack.includes(cv)) return false;
+    for (const el of stack) {
+      if (!DET.MEDIA_TAGS.has(el.tagName) || el.contains(cv)) continue;
+      if (!(el.compareDocumentPosition(cv) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+      const r = el.getBoundingClientRect();
+      const w = Math.min(r.right, rect.right) - Math.max(r.left, rect.left);
+      const h = Math.min(r.bottom, rect.bottom) - Math.max(r.top, rect.top);
+      if (w > 0 && h > 0 && w * h >= rect.width * rect.height * 0.5) return true;
+    }
+    return false;
   }
 
   /**

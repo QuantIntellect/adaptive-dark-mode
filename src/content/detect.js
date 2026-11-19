@@ -80,7 +80,18 @@
    * covered by the opaque background of any full-page wrapper (SPA roots such
    * as #app, #__next or #root). Sites that switch theme by restyling only the
    * wrapper (html/body transparent) are seen here. Returns { color, wrappers }.
+   *
+   * Modal overlays are not the page: a cookie-consent backdrop is a fixed,
+   * full-viewport layer stacked above the content (often black at 60%
+   * opacity). Fixed layers with a z-index are skipped, and opacity counts
+   * toward how opaque a wrapper's background really is.
    */
+  function isOverlay(cs) {
+    if (cs.position !== 'fixed' && cs.position !== 'sticky') return false;
+    const z = parseInt(cs.zIndex, 10);
+    return Number.isFinite(z) && z > 0;
+  }
+
   function pageSurface() {
     let color = canvasColor();
     const wrappers = [];
@@ -89,19 +100,25 @@
     const vw = window.innerWidth;
     const docH = Math.max(document.documentElement.scrollHeight, window.innerHeight);
     let el = body;
+    let opacity = 1;
     for (let depth = 0; el && depth < 8; depth++) {
       let next = null;
+      let nextCs = null;
       for (const child of el.children) {
         if (MEDIA_TAGS.has(child.tagName) || child.tagName === 'SCRIPT' || child.tagName === 'STYLE') continue;
         const r = child.getBoundingClientRect();
         if (r.width >= vw * 0.9 && r.height >= docH * 0.6) {
+          const cs = getComputedStyle(child);
+          if (isOverlay(cs) || cs.visibility === 'hidden') continue;
           next = child;
+          nextCs = cs;
           break;
         }
       }
       if (!next) break;
-      const bg = C.parse(getComputedStyle(next).backgroundColor);
-      if (bg && bg.a >= 0.9) color = C.composite(bg, color);
+      opacity *= parseFloat(nextCs.opacity) || 0;
+      const bg = C.parse(nextCs.backgroundColor);
+      if (bg && bg.a * opacity >= 0.9) color = C.composite(bg, color);
       wrappers.push(next);
       el = next;
     }

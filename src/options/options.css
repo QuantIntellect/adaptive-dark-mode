@@ -6,8 +6,9 @@
   --muted: #6e6e73;
   --line: rgb(60 60 67 / 0.14);
   --fill: rgb(118 118 128 / 0.12);
-  --accent: #007aff;
-  --danger: #ff3b30;
+  --accent: #0066dd; /* links and focus: 4.7:1 or more on these backgrounds */
+  --accent-fill: #0066dd; /* filled buttons: white text at 5.3:1 */
+  --danger: #d70015;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -17,8 +18,8 @@
     --muted: #98989f;
     --line: rgb(84 84 88 / 0.55);
     --fill: rgb(118 118 128 / 0.24);
-    --accent: #0a84ff;
-    --danger: #ff453a;
+    --accent: #409cff;
+    --danger: #ff6961;
   }
 }
 * { box-sizing: border-box; }
@@ -47,8 +48,8 @@ code { font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: var(-
 .tr .host { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tr .detail { color: var(--muted); grid-column: 1 / -1; margin-top: -4px; font-size: 12px; overflow-wrap: anywhere; }
 .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--fill); }
-.badge.on { color: #fff; background: #34c759; }
-.badge.off { color: #fff; background: #8e8e93; }
+.badge.on { color: #06260f; background: #34c759; }
+.badge.off { color: #1c1c1e; background: #aeaeb2; }
 
 input, select, button, .button {
   font: inherit; font-size: 13px; color: var(--text);
@@ -57,7 +58,7 @@ input, select, button, .button {
 input:focus-visible, select:focus-visible, button:focus-visible, .button:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
 button, .button { cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; }
 button:hover, .button:hover { filter: brightness(0.96); }
-button[type="submit"] { background: var(--accent); color: #fff; }
+button[type="submit"] { background: var(--accent-fill); color: #fff; }
 button.link { background: none; color: var(--accent); padding: 4px 6px; min-height: 0; }
 button.danger { color: var(--danger); }
 .add { display: flex; gap: 8px; flex-wrap: wrap; }

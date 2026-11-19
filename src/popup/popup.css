@@ -7,7 +7,8 @@
   --line: rgb(60 60 67 / 0.14);
   --fill: rgb(118 118 128 / 0.12);
   --fill-strong: rgb(118 118 128 / 0.2);
-  --accent: #007aff;
+  --accent: #0066dd; /* links and focus: 4.7:1 or more on these backgrounds */
+  --accent-fill: #0066dd; /* filled buttons: white text at 5.3:1 */
   --green: #34c759;
   --orange: #ff9500;
   --seg-on: #ffffff;
@@ -22,7 +23,7 @@
     --line: rgb(84 84 88 / 0.5);
     --fill: rgb(118 118 128 / 0.24);
     --fill-strong: rgb(118 118 128 / 0.36);
-    --accent: #0a84ff;
+    --accent: #409cff;
     --green: #30d158;
     --orange: #ff9f0a;
     --seg-on: #636366;
@@ -80,7 +81,7 @@ body {
   padding: 8px;
   border: 0;
   border-radius: 9px;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: #fff;
   font: inherit;
   font-weight: 600;
@@ -89,12 +90,38 @@ body {
 }
 .try:hover { filter: brightness(1.08); }
 .try:active { transform: scale(0.98); }
+.try:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.try.quiet { background: var(--fill-strong); color: var(--text); }
+
+/* disclosure rows ("Something looks wrong?", "Fine-tuning") */
+details > summary { list-style: none; cursor: pointer; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::after {
+  content: ""; width: 7px; height: 7px; margin-left: auto; flex: none;
+  border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-2px) rotate(45deg); transition: transform 150ms ease;
+}
+details[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 12px; }
+.tuning > summary { font-weight: 500; }
+
+.fix { border-top: 0.5px solid var(--line); }
+.fix > summary { display: flex; align-items: center; padding: 9px 12px; color: var(--muted); font-size: 12px; }
+.fix-body { display: grid; gap: 6px; padding: 0 12px 12px; }
+.fix-btn {
+  display: grid; gap: 1px; text-align: left; padding: 8px 10px; border: 0; border-radius: 9px;
+  background: var(--fill); color: var(--text); font: inherit; cursor: pointer;
+  transition: background 120ms ease;
+}
+.fix-btn:hover { background: var(--fill-strong); }
+.fix-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fix-title { font-weight: 500; }
+.fix-hint { color: var(--muted); font-size: 12px; }
 
 .stats {
-  border-top: 0.5px solid var(--line);
-  padding: 8px 12px 10px;
+  padding: 2px 2px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 

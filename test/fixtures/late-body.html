@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Slow page</title>
+  <!-- The test server sends everything up to the marker below, waits, then
+       sends the rest: the window where a page shows an empty white canvas
+       (issue #1). -->
+  <style>
+    body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #222; background: #fff; }
+    main { max-width: 680px; margin: 0 auto; padding: 32px 20px; }
+  </style>
+</head>
+<!--FLUSH-->
+<body>
+  <main>
+    <h1>Worth the wait</h1>
+    <p>This content arrives a moment after the page starts loading.</p>
+  </main>
+</body>
+</html>
