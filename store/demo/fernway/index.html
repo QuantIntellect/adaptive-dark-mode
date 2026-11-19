@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The coast road at first light · Fernway</title>
+  <!-- Demo site for the store screenshots: an invented travel journal with
+       original copy and AI-generated photographs. Light design only. -->
+  <style>
+    :root {
+      --paper: #fbf8f3; --ink: #1d1a17; --ink-2: #3b3530; --muted: #6f665d; --rule: #e6dfd4; --tint: #f3ece1;
+      --accent: #a8461f; --accent-soft: #f6e4da;
+      --serif: ui-serif, "New York", "Iowan Old Style", "Charter", Georgia, serif;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--paper); }
+    body { margin: 0; color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
+
+    .mast { border-bottom: 1px solid var(--rule); }
+    .mast-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 70px; }
+    .date { font-size: 12.5px; color: var(--muted); }
+    .logo { font-family: var(--serif); font-size: 32px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+    .logo svg { margin-top: 2px; }
+    .mast-actions { display: flex; justify-content: flex-end; align-items: center; gap: 14px; font-size: 13.5px; }
+    .mast-actions .signin { color: var(--ink-2); }
+    .sub { background: var(--accent); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; }
+    .sections { display: flex; justify-content: center; gap: 28px; border-top: 1px solid var(--rule); height: 42px; align-items: center; font-size: 13.5px; color: var(--ink-2); font-weight: 500; }
+    .sections a.on { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); padding: 11px 0; }
+
+    .head { max-width: 780px; margin: 0 auto; text-align: center; padding: 34px 0 26px; }
+    .kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+    h1 { font-family: var(--serif); font-size: 50px; line-height: 1.05; letter-spacing: -0.02em; font-weight: 700; margin: 12px 0 14px; }
+    .dek { font-family: var(--serif); font-style: italic; font-size: 20px; line-height: 1.45; color: var(--ink-2); margin: 0 auto 18px; max-width: 36em; }
+    .byline { display: inline-flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); }
+    .byline b { color: var(--ink); font-weight: 600; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 11.5px; font-weight: 700; }
+    .dot { width: 3px; height: 3px; border-radius: 50%; background: #b8ada0; }
+
+    figure { margin: 0; }
+    .lead img { display: block; width: 100%; aspect-ratio: 16 / 8; object-fit: cover; border-radius: 6px; }
+    figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+    .body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 56px; padding: 40px 0 72px; }
+    .text { font-family: var(--serif); font-size: 19px; line-height: 1.7; color: var(--ink-2); max-width: 640px; }
+    .text p { margin: 0 0 1.1em; }
+    .text p:first-child::first-letter { float: left; font-size: 4.1em; line-height: 0.84; font-weight: 700; color: var(--accent); margin: 0.06em 0.08em 0 0; }
+    .pull { margin: 1.6em 0; padding: 4px 0 4px 22px; border-left: 3px solid var(--accent); font-size: 25px; line-height: 1.35; color: var(--ink); font-style: italic; }
+    .inline img { display: block; width: 100%; border-radius: 6px; }
+    .text a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+    aside h4 { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+    .more a { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--rule); }
+    .more img { width: 76px; height: 76px; object-fit: cover; border-radius: 6px; display: block; }
+    .more span { font-family: var(--serif); font-size: 16.5px; line-height: 1.3; font-weight: 600; }
+    .more small { display: block; font-family: var(--sans); font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 4px; }
+    .letter { margin-top: 26px; padding: 20px; border-radius: 10px; background: var(--tint); border: 1px solid var(--rule); }
+    .letter b { font-family: var(--serif); font-size: 19px; display: block; margin-bottom: 4px; }
+    .letter p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .letter input { width: 100%; height: 38px; border: 1px solid #d6ccbe; border-radius: 8px; background: #fff; padding: 0 12px; font: inherit; font-size: 14px; color: var(--ink); }
+    .letter button { margin-top: 8px; width: 100%; height: 38px; border: 0; border-radius: 8px; background: var(--ink); color: #fff; font: inherit; font-size: 14px; font-weight: 600; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 22px; }
+    .tags span { font-size: 12px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--rule); color: var(--ink-2); background: #fff; }
+    footer { border-top: 1px solid var(--rule); padding: 26px 0 40px; font-size: 13px; color: var(--muted); }
+
+    @media (max-width: 760px) {
+      .date, .signin { display: none; }
+      .mast-top { grid-template-columns: auto 1fr; }
+      .sections { justify-content: flex-start; overflow: hidden; gap: 18px; }
+      h1 { font-size: 36px; }
+      .body { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="mast">
+    <div class="wrap mast-top">
+      <div class="date">Thursday, 19 November</div>
+      <a class="logo" href="#"><svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true"><path d="M11 25V9M11 15c-4-1-7-4-8-9 4 0 7 2 8 6M11 12c4-1 7-4 8-9-4 0-7 2-8 6" stroke="#3f6b3a" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Fernway</a>
+      <div class="mast-actions"><a class="signin" href="#">Sign in</a><a class="sub" href="#">Subscribe</a></div>
+    </div>
+    <nav class="wrap sections"><a class="on" href="#">Journeys</a><a href="#">Places</a><a href="#">Field notes</a><a href="#">Food</a><a href="#">Photo essays</a><a href="#">Letters</a></nav>
+  </header>
+
+  <main class="wrap">
+    <div class="head">
+      <div class="kicker">Journeys · The long way round</div>
+      <h1>The coast road at first light</h1>
+      <p class="dek">Forty miles on foot along the northern cliffs, with a lighthouse for company and nowhere in particular to be.</p>
+      <div class="byline"><span class="avatar">ML</span><span>By <b>Maren Lind</b></span><span class="dot"></span><span>12 min read</span></div>
+    </div>
+
+    <figure class="lead">
+      <img src="hero.jpg" alt="A footpath along green clifftops above a calm sea at dawn">
+      <figcaption>The path above Hollin Bay, an hour after sunrise.</figcaption>
+    </figure>
+
+    <div class="body">
+      <article class="text">
+        <p>The first mile is always the hardest, and not because of the hills. It takes that long to stop checking the time, to stop thinking about where the day is meant to end, and to notice that the sea has been changing colour every few minutes since you set out.</p>
+        <p>By the second headland the mist had lifted off the water, and the lighthouse I had been walking towards for an hour appeared, small and white and much further away than it had any right to be. A farmer moving sheep along the lane told me it was “a good morning’s walk, if you don’t stop.” I stopped a great deal.</p>
+        <blockquote class="pull">Nobody walks this coast to arrive somewhere. You walk it to find out how slowly you can bear to go.</blockquote>
+        <p>The route follows an old <a href="#">drovers’ path</a> for most of its length, dipping down to fishing coves and climbing back up again in a rhythm that soon feels like breathing. There are three places to buy food in forty miles, and one of them is an honesty box.</p>
+        <figure class="inline">
+          <img src="boathouse.jpg" alt="A wooden boathouse on a still lake surrounded by birch trees">
+          <figcaption>Inland, the second evening: a boathouse on Lake Arnmere.</figcaption>
+        </figure>
+        <p>On the second day the path turns inland for a while, past a lake so still that the boathouse on its shore seemed to be built twice, once in wood and once in water.</p>
+        <div class="tags"><span>Walking</span><span>Coast</span><span>Slow travel</span><span>Autumn</span></div>
+      </article>
+
+      <aside>
+        <h4>More from Fernway</h4>
+        <div class="more">
+          <a href="#"><img src="coffee.jpg" alt="Coffee and a map on a rainy windowsill"><span>How to plan a walk you won’t finish<small>Field notes · 6 min</small></span></a>
+          <a href="#"><img src="lane.jpg" alt="A bicycle against a stone wall on a country lane"><span>Twelve lanes worth cycling slowly<small>Places · 9 min</small></span></a>
+        </div>
+        <div class="letter">
+          <b>The Sunday Letter</b>
+          <p>One unhurried journey in your inbox each week. No ads, ever.</p>
+          <input type="email" placeholder="you@example.com" aria-label="Email address">
+          <button type="button">Subscribe</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer><div class="wrap">Fernway is a demo site. Text is original; photographs are AI-generated.</div></footer>
+</body>
+</html>

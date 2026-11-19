@@ -65,7 +65,7 @@ export function findChrome() {
  * keychain sane on macOS); we add a debugging port and call the method on the
  * browser target.
  */
-export async function launchWithExtension({ chromePath, userDataDir, repo, headed = false }) {
+export async function launchWithExtension({ chromePath, userDataDir, repo, headed = false, extraArgs = [] }) {
   const port = await freePort();
   const context = await chromium.launchPersistentContext(userDataDir, {
     executablePath: chromePath || findChrome(),
@@ -73,7 +73,7 @@ export async function launchWithExtension({ chromePath, userDataDir, repo, heade
     colorScheme: 'dark',
     viewport: { width: 1280, height: 900 },
     ignoreDefaultArgs: ['--disable-extensions', '--disable-component-extensions-with-background-pages'],
-    args: [`--remote-debugging-port=${port}`, '--enable-unsafe-extension-debugging', '--force-dark-mode', '--hide-scrollbars'],
+    args: [`--remote-debugging-port=${port}`, '--enable-unsafe-extension-debugging', '--force-dark-mode', '--hide-scrollbars', ...extraArgs],
   });
   const extensionId = await loadUnpacked(port, repo);
   let sw = null;

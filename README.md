@@ -10,7 +10,7 @@ This is a Manifest V3 Chrome extension modelled on the **Adaptive Dark Mode** th
 Light surfaces become dark and dark text becomes light. Hues and brand colors stay, and photos, video and canvas are
 left as the author made them. Text is pushed to WCAG 4.5:1 against whatever is actually painted behind it.
 
-![The project's test page, original on the left and adapted on the right](store/screenshots/1-before-after.png)
+![A demo product site, original on the left and adapted on the right](store/screenshots/1-before-after.png)
 
 > **Independent project.** Not affiliated with or endorsed by Apple. Safari is a trademark of Apple Inc. The behavior
 > is modelled on Apple's announcement, WebKit's open-source code and the screenshots Apple published. It has not yet
@@ -34,9 +34,9 @@ git clone https://github.com/QuantIntellect/adaptive-dark-mode.git
 Then choose the cloned folder with **Load unpacked**. To update later, run `git pull` and click the reload icon on
 the extension's card.
 
-**Chrome Web Store**: submitted on 2026-11-11 and pending review. Item ID `ifkdflohhnohljpoijlpbdnhpfgmefjd`. Once approved
-it will be at <https://chromewebstore.google.com/detail/ifkdflohhnohljpoijlpbdnhpfgmefjd>. The submission kit (listing
-text, privacy answers, screenshots) is in [store/listing.md](store/listing.md).
+**Chrome Web Store**: <https://chromewebstore.google.com/detail/ifkdflohhnohljpoijlpbdnhpfgmefjd>. Updates reach the
+store after Google's review, so the newest version may be on GitHub first. The submission kit (listing text, privacy
+answers, screenshots) is in [store/listing.md](store/listing.md).
 
 ## Use
 
@@ -49,11 +49,15 @@ text, privacy answers, screenshots) is in [store/listing.md](store/listing.md).
 
 | Popup | Try offer |
 |---|---|
-| ![Popup with per-site switch, darkness and contrast settings](store/screenshots/3-popup.png) | ![The "This page is bright · Try" card on a light page](store/screenshots/4-try-offer.png) |
+| ![Popup with per-site switch, darkness and contrast settings](store/screenshots/4-popup.png) | ![The "This page is bright · Try" card on a light page](store/screenshots/5-try-offer.png) |
+
+The pages in the screenshots are three demo sites in [`store/demo/`](store/demo): a product site, a magazine and a
+recipe site. Their names and text are invented for the demo, and their photographs are AI-generated.
 
 **Popup settings**: per-site on/off, use on all bright sites, runs (Follow system, Always, Off), **darkness** (Soft
-`#333`, Standard `#1e1e1e`, Deep, Black), **text contrast** (4.5:1 like Safari, or 7:1), and switches for logos and
-icons, surface edges, chart islands and the Try offer.
+`#333`, Standard `#1e1e1e`, Deep, Black), **text contrast** (4.5:1 like Safari, or 7:1), and, under **Fine-tuning**,
+switches for logos and icons, surface edges, chart islands and the Try offer. On an adapted page, **Something looks
+wrong?** offers to leave the site's canvases unchanged (drawing apps, games) or to turn the site off.
 
 **Options page**: the list of sites you switched on or off, quirks (disable a site, force-invert or preserve elements
 by selector), built-in quirks, export, import and reset.
@@ -69,14 +73,14 @@ screenshots, and how each engine mechanism maps to something an extension can do
 |---|---|
 | Runs only in dark mode, only where you allow it | "Follow system" mode, per-site on/off, "Use on all bright sites" |
 | Leaves sites with their own dark mode alone | `color-scheme: light dark` / `light only` (meta or CSS) → untouched. Author-managed subtrees are excluded. |
-| Leaves already-dark pages alone | Samples the rendered page after DOMContentLoaded. A cached verdict, recorded per system appearance, lets known bright sites start at `document_start`. |
+| Leaves already-dark pages alone | Samples the rendered page after DOMContentLoaded. On sites you turned on it starts at `document_start` (no white flash) unless a cached verdict, recorded per system appearance, says the site is dark, and steps aside if the page turns out dark. |
 | Sites with their own automatic theme keep it | Steps aside when the site turns dark by itself, including themes applied late by an app on a wrapper such as `#app`. The author's `prefers-color-scheme: dark` rules are kept as written. With **Always** on a light system they are switched on, so the site's own dark design is used. |
 | Light surfaces dark, dark text light, hue kept | A contrast-preserving luminance flip in OKLCH, anchored so white → `#1e1e1e` |
 | Semantic colors keep their meaning | Vivid badges and buttons stay. Vivid links are lightened just enough. |
 | Text readable on its real backdrop | Hit-tests what paints behind each text run, then 4.5:1 (or 7:1) |
 | Text over photos untouched | Authored colors kept over images and video |
 | Simple black-and-white logos inverted | Pixel histogram, dark monochrome SVGs, hue-preserving inversion |
-| Canvas, video and photos untouched | Charts drawn dark-on-transparent keep a light backdrop. Iframes keep their transparency. |
+| Canvas, video and photos untouched | Charts drawn dark-on-transparent keep a light backdrop; a drawing layer over another canvas or image doesn't get one. Iframes keep their transparency. |
 | Blend modes that need a light page are turned off | `multiply`, `screen` and the like → `normal` |
 | Per-site and per-element quirks | Options page: disable a site, force-invert or preserve elements |
 
@@ -99,12 +103,13 @@ handles what rules can't: text contrast against the real backdrop, small dark co
 ## Verification
 
 All checks run against the project's own fixtures in `test/fixtures/`: a recipe-site page that exercises
-every rule case, opt-out pages, an already-dark page and a late-rendering SPA. Pages that must be left alone
+every rule case, opt-out pages, an already-dark page, a late-rendering SPA, stacked drawing canvases, a consent
+dialog and a page whose body arrives late. Pages that must be left alone
 are also compared pixel for pixel.
 
 | Browser | Mode | Fixture checks |
 |---|---|---|
-| Chrome for Testing 153.0.8010.12 | headless | 72 / 72 (1.0.1) |
+| Chrome for Testing 153.0.8010.12 | headless | 83 / 83 (1.0.2) |
 | Google Chrome 157.0.8103.40 (macOS) | headed | 65 / 66 (1.0.0, before the six auto-theme checks). The miss is the pixel-identical "turned off" comparison. About 2,200 pixels around the two scaled product images differ, by 1 level out of 255 (15 in an earlier run). The separate "nothing left behind" check (0 attributes, 0 custom properties, 0 sheets) passed. The cause has not been isolated. |
 
 Real sites, with the extension on (text elements sampled after scrolling). Google Chrome 157 and Chrome for Testing 153 gave the
@@ -136,8 +141,10 @@ apple.com it was 0.07 to 0.2 s higher.
 - **Per element, not per paint.** Text fixes from the layout pass apply to an element, so they override that element's
   own `:hover` color change.
 - **Sprites** are classified as a whole image, not by the part that is drawn.
-- **First visit.** A site's first page is adapted after one detection pass at DOMContentLoaded, which can briefly show
-  the light page. After that, it starts at `document_start`.
+- **First visit.** On sites you turned on, pages start dark at `document_start`. Chrome can still paint a white frame
+  before the extension's settings have loaded (a few milliseconds), and with the per-site **Try** offer a bright page
+  is shown as it is until you choose. A dark site visited for the first time is briefly converted, then left alone
+  after the first check.
 - **JavaScript-switched themes on a light system.** With **Always** on a light system, a site that picks its theme
   in JavaScript from `matchMedia` gets this extension's conversion of its light theme, not its own dark theme. An
   extension can't change the appearance Chrome reports to the page. Set macOS to Dark: the site then uses its own
@@ -174,7 +181,7 @@ src/content/main.js          lifecycle and gates
 src/background/service-worker.js   settings writer, cross-origin CSS fetch, image decode, badge, shortcut
 src/popup, src/options       UI
 docs/how-safari-does-it.md   the research
-store/                       Chrome Web Store listing kit, screenshots and promo tile
+store/                       Chrome Web Store listing kit, screenshots, promo tile and the demo sites they show
 test/unit, test/e2e, test/fixtures
 scripts/pack.mjs, scripts/screenshots.mjs
 ```
@@ -187,7 +194,7 @@ No build step. Edit, then click the reload icon on the extension's card at `chro
 npm install              # playwright-core, used only by the e2e suite and the screenshot script
 npm test                 # unit tests
 npm run e2e              # end-to-end checks on the fixtures (add -- --sites for real websites)
-npm run screenshots      # regenerate store/screenshots and the promo tile from the fixture
+npm run screenshots      # regenerate store/screenshots and the promo tile from the demo sites in store/demo
 npm run pack             # dist/adaptive-dark-mode-<version>.zip (runtime files only)
 ```
 
@@ -197,3 +204,5 @@ Chrome 137 and later ignore `--load-extension`, so the e2e harness loads the ext
 ## License
 
 [MIT](LICENSE)
+
+Made by [ZharfAI](https://zharf.ai).

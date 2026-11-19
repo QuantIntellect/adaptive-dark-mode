@@ -6,6 +6,10 @@ registration fee, signing in and pressing **Submit for review** are done by the 
 - Package: `npm run pack` → `dist/adaptive-dark-mode-<version>.zip`. It contains only `manifest.json`, `src/` and the
   16/32/48/128 icons, with no tests or docs.
 - Dashboard: <https://chrome.google.com/webstore/devconsole> → **New item** → upload the zip.
+- **Updates**: bump `version` in `manifest.json` and `package.json`, run `npm test`, `npm run e2e` and `npm run pack`,
+  then **Package** → **Upload new package** in the dashboard. If the screenshots changed, replace them under
+  **Store listing** before submitting. Don't add permissions without a strong reason: a new permission that shows a
+  warning disables the extension for every user until they accept it.
 
 ---
 
@@ -41,6 +45,8 @@ Settings: darkness (Soft, Standard, Deep, Black), text contrast, logo and icon h
 Private by design: no account, no analytics, no server. Everything runs in your browser.
 
 Inspired by the Adaptive Dark Mode feature introduced in Safari 27.3. This is an independent project and is not affiliated with or endorsed by Apple. Open source: https://github.com/QuantIntellect/adaptive-dark-mode
+
+Made by ZharfAI · https://zharf.ai
 ```
 
 **Category**: Accessibility (under Make Chrome Yours)
@@ -52,10 +58,12 @@ Inspired by the Adaptive Dark Mode feature introduced in Safari 27.3. This is an
 | Field | File |
 |---|---|
 | Store icon (128×128) | `icons/icon128.png` |
-| Screenshots (1280×800) | `store/screenshots/1-before-after.png`, `2-adapted.png`, `3-popup.png`, `4-try-offer.png` |
+| Screenshots (1280×800) | `store/screenshots/1-before-after.png`, `2-every-site.png`, `3-details.png`, `4-popup.png`, `5-try-offer.png` |
 | Small promo tile (440×280) | `store/promo-440x280.png` |
 
-All screenshots are rendered from the project's own test page by `npm run screenshots`. None show third-party sites.
+All screenshots are rendered by `npm run screenshots` from three demo sites in `store/demo/` (Tidewell, Fernway, Larder),
+served as `*.example` hosts. Their names and text are invented for the demo, and their photographs are AI-generated.
+None show third-party sites. Everything inside the drawn browser windows is a real capture of the extension.
 
 **Official URL / homepage**: `https://github.com/QuantIntellect/adaptive-dark-mode`
 

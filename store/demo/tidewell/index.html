@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tidewell · Cash flow forecasting for small teams</title>
+  <!-- Demo site for the store screenshots: an invented product with original
+       copy. Light design only (no color-scheme, no dark-mode CSS), so the
+       extension adapts it. -->
+  <style>
+    :root {
+      --ink: #0b1324; --ink-2: #334055; --muted: #5d687a; --line: #e4e8ef; --soft: #f5f7fb;
+      --brand: #1f4fd8; --brand-ink: #ffffff; --brand-soft: #e9efff;
+      --up: #0b8a5f; --up-soft: #e3f6ee; --warn: #b45309; --warn-soft: #fdf1e2; --down: #c8312a; --down-soft: #fde8e6;
+    }
+    * { box-sizing: border-box; }
+    html { background: #ffffff; }
+    body { margin: 0; color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+    .announce { background: var(--brand-soft); color: #1c3a99; font-size: 13px; text-align: center; padding: 8px 16px; }
+    .announce b { font-weight: 600; }
+    .announce a { margin-left: 8px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+    header { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 3; }
+    .nav { display: flex; align-items: center; gap: 28px; height: 62px; }
+    .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+    .brand svg { display: block; }
+    .links { display: flex; gap: 22px; color: var(--ink-2); font-size: 14px; }
+    .spacer { flex: 1; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 9px; font-size: 14px; font-weight: 600; border: 1px solid transparent; }
+    .btn.primary { background: var(--brand); color: var(--brand-ink); box-shadow: 0 1px 2px rgb(16 40 120 / 0.25); }
+    .btn.ghost { color: var(--ink-2); }
+    .btn.outline { border-color: #cfd6e2; color: var(--ink); background: #fff; }
+    .btn.lg { height: 46px; padding: 0 20px; font-size: 15px; border-radius: 11px; }
+
+    .hero { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr); gap: 44px; align-items: center; padding: 44px 0 56px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 99px; background: var(--soft); border: 1px solid var(--line); font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+    .eyebrow span { padding: 2px 8px; border-radius: 99px; background: var(--up-soft); color: var(--up); font-weight: 700; font-size: 11.5px; }
+    h1 { font-size: 48px; line-height: 1.04; letter-spacing: -0.035em; margin: 18px 0 16px; font-weight: 750; }
+    .lede { font-size: 17.5px; line-height: 1.55; color: var(--muted); margin: 0 0 26px; max-width: 30em; }
+    .ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+    .note { margin-top: 16px; font-size: 13px; color: var(--muted); display: flex; gap: 16px; }
+    .note i { font-style: normal; color: var(--up); font-weight: 700; margin-right: 4px; }
+
+    /* product preview */
+    .app { border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 24px 60px -24px rgb(15 30 70 / 0.28), 0 2px 6px rgb(15 30 70 / 0.06); overflow: hidden; }
+    .app-top { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--soft); font-size: 12.5px; color: var(--muted); }
+    .app-top b { color: var(--ink); font-weight: 600; }
+    .seg { margin-left: auto; display: flex; background: #e9edf4; border-radius: 7px; padding: 2px; }
+    .seg span { padding: 3px 9px; border-radius: 5px; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+    .seg span.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+    .app-body { padding: 14px; display: grid; gap: 12px; }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+    .kpi small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 500; }
+    .kpi strong { display: block; font-size: 20px; letter-spacing: -0.02em; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+    .delta { display: inline-block; padding: 1px 6px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+    .delta.up { background: var(--up-soft); color: var(--up); }
+    .delta.down { background: var(--down-soft); color: var(--down); }
+    .chart { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 6px; }
+    .chart-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--muted); }
+    .chart-head b { color: var(--ink); font-size: 13px; }
+    .legend { display: flex; gap: 12px; }
+    .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
+    .rows { border: 1px solid var(--line); border-radius: 10px; font-size: 12.5px; }
+    .row { display: grid; grid-template-columns: 1.4fr 1fr 0.9fr auto; gap: 10px; align-items: center; padding: 8px 12px; }
+    .row + .row { border-top: 1px solid var(--line); }
+    .row .who { font-weight: 600; }
+    .row .amt { font-variant-numeric: tabular-nums; text-align: right; }
+    .row .when { color: var(--muted); }
+    .pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+    .pill.paid { background: var(--up-soft); color: var(--up); }
+    .pill.due { background: var(--warn-soft); color: var(--warn); }
+    .pill.late { background: var(--down-soft); color: var(--down); }
+
+    .logos { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 26px 0; background: #fff; }
+    .logos p { margin: 0 0 16px; text-align: center; color: var(--muted); font-size: 13px; }
+    .logos .row-l { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .logos img { height: 28px; width: auto; opacity: 0.85; }
+
+    .features { padding: 64px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .feature { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: #fff; }
+    .feature .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); margin-bottom: 14px; }
+    .feature h3 { margin: 0 0 6px; font-size: 17px; letter-spacing: -0.01em; }
+    .feature p { margin: 0; color: var(--muted); }
+
+    .quote { margin: 0 0 72px; padding: 36px; border-radius: 18px; background: var(--soft); border: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; }
+    .quote blockquote { margin: 0; font-size: 22px; line-height: 1.4; letter-spacing: -0.015em; font-weight: 500; }
+    .quote cite { display: flex; align-items: center; gap: 10px; font-style: normal; font-size: 14px; color: var(--muted); margin-top: 18px; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: #d8e2ff; color: #1c3a99; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+    footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 760px) {
+      .links, .btn.ghost { display: none; }
+      .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 28px; }
+      h1 { font-size: 38px; }
+      .features { grid-template-columns: 1fr; }
+      .quote { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="announce"><b>New:</b> scenario planning, so you can compare a hire against a price change side by side. <a href="#">See what’s new</a></div>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#">
+        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="7" fill="#1f4fd8"/><path d="M5 15c2.5-3 5-3 7.5 0s5 3 8.5 0" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M5 10c2.5-3 5-3 7.5 0s5 3 8.5 0" stroke="#a9c1ff" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+        Tidewell
+      </a>
+      <nav class="links"><a href="#">Product</a><a href="#">Pricing</a><a href="#">Customers</a><a href="#">Docs</a></nav>
+      <div class="spacer"></div>
+      <a class="btn ghost" href="#">Sign in</a>
+      <a class="btn primary" href="#">Start free</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow"><span>New</span> Forecasts for teams of 2 to 50</div>
+        <h1>See next quarter’s cash, today.</h1>
+        <p class="lede">Tidewell connects your bank and invoices, then forecasts cash week by week, so you know your runway before it becomes a problem.</p>
+        <div class="ctas">
+          <a class="btn primary lg" href="#">Start free for 30 days</a>
+          <a class="btn outline lg" href="#">Book a demo</a>
+        </div>
+        <div class="note"><span><i>✓</i>No card needed</span><span><i>✓</i>Set up in 10 minutes</span></div>
+      </div>
+
+      <div class="app" aria-label="Product preview">
+        <div class="app-top"><b>Overview</b> · Northpine Studio <div class="seg"><span>Month</span><span class="on">Quarter</span><span>Year</span></div></div>
+        <div class="app-body">
+          <div class="kpis">
+            <div class="kpi"><small>Cash on hand</small><strong>$184,200</strong><span class="delta up">▲ 4.2%</span></div>
+            <div class="kpi"><small>Monthly burn</small><strong>$38,900</strong><span class="delta down">▲ 2.1%</span></div>
+            <div class="kpi"><small>Runway</small><strong>14.6 mo</strong><span class="delta up">▲ 0.8 mo</span></div>
+          </div>
+          <div class="chart">
+            <div class="chart-head"><b>Cash forecast</b><div class="legend"><span><i style="background:#1f4fd8"></i>Actual</span><span><i style="background:#8aa6f0"></i>Forecast</span></div></div>
+            <svg viewBox="0 0 520 150" width="100%" height="150" aria-label="Cash forecast chart">
+              <g stroke="#e8ecf2" stroke-width="1"><line x1="0" y1="20" x2="520" y2="20"/><line x1="0" y1="60" x2="520" y2="60"/><line x1="0" y1="100" x2="520" y2="100"/><line x1="0" y1="132" x2="520" y2="132"/></g>
+              <path d="M0 98 C40 92 70 84 110 86 S180 70 220 64 S290 58 320 50 L320 132 L0 132 Z" fill="#1f4fd8" fill-opacity="0.12"/>
+              <path d="M0 98 C40 92 70 84 110 86 S180 70 220 64 S290 58 320 50" fill="none" stroke="#1f4fd8" stroke-width="2.5"/>
+              <path d="M320 50 C360 44 390 52 430 40 S490 30 520 26" fill="none" stroke="#8aa6f0" stroke-width="2.5" stroke-dasharray="5 5"/>
+              <circle cx="320" cy="50" r="4.5" fill="#fff" stroke="#1f4fd8" stroke-width="2.5"/>
+              <g font-family="-apple-system, system-ui, sans-serif" font-size="10.5" fill="#6b7586"><text x="0" y="147">Jul</text><text x="104" y="147">Aug</text><text x="210" y="147">Sep</text><text x="314" y="147">Oct</text><text x="420" y="147">Nov</text><text x="496" y="147">Dec</text></g>
+            </svg>
+          </div>
+          <div class="rows">
+            <div class="row"><span class="who">Halden Ltd</span><span class="when">Invoice 1042</span><span class="amt">$12,400</span><span class="pill paid">Paid</span></div>
+            <div class="row"><span class="who">Brightfold</span><span class="when">Due Nov 28</span><span class="amt">$8,750</span><span class="pill due">Due soon</span></div>
+            <div class="row"><span class="who">Okra Labs</span><span class="when">Due Nov 2</span><span class="amt">$3,120</span><span class="pill late">Overdue</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="logos">
+    <div class="wrap">
+      <p>Finance teams at 2,000+ small companies plan with Tidewell</p>
+      <div class="row-l">
+        <img src="logos/halden.svg" alt="Halden">
+        <img src="logos/brightfold.svg" alt="Brightfold">
+        <img src="logos/quorum.svg" alt="Quorum">
+        <img src="logos/northpine.svg" alt="Northpine">
+        <img src="logos/okra.svg" alt="Okra Labs">
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <section class="features">
+      <div class="feature">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15l4-5 3 3 6-8"/><path d="M13 5h3v3"/></svg></div>
+        <h3>Weekly forecasts</h3><p>Every invoice and bill lands on the week it will clear, not the month it was sent.</p>
+      </div>
+      <div class="feature">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M3 8h14M8 4v12"/></svg></div>
+        <h3>Scenarios</h3><p>Try a new hire, a price change or a slow quarter, and see runway move before you decide.</p>
+      </div>
+      <div class="feature">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v14M4 9l6-6 6 6"/></svg></div>
+        <h3>Reminders that get paid</h3><p>Polite, scheduled nudges for overdue invoices, written in your own words.</p>
+      </div>
+    </section>
+
+    <section class="quote">
+      <div>
+        <blockquote>“We used to find out about a cash crunch from the bank. Now we see it six weeks out and have time to do something about it.”</blockquote>
+        <cite><span class="avatar">AV</span><span><b style="color:var(--ink)">Ana Varga</b> · Finance lead, Brightfold</span></cite>
+      </div>
+      <a class="btn primary lg" href="#">Start free</a>
+    </section>
+  </main>
+
+  <footer><div class="wrap">© 2026 Tidewell (a demo site). Product · Pricing · Security · Privacy</div></footer>
+</body>
+</html>

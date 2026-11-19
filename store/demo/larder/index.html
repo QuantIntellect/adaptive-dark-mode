@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Larder · Cook what you already have</title>
+  <!-- Demo site for the store screenshots: an invented meal-planning site
+       with original copy and AI-generated food photographs. Light design only. -->
+  <style>
+    :root {
+      --bg: #fffdf9; --ink: #16231f; --ink-2: #33433d; --muted: #66746e; --line: #ebe6dc; --card: #ffffff; --soft: #f6f2ea;
+      --brand: #0f2530; --brand-ink: #ffffff; --saffron: #f4b740; --saffron-ink: #5c3d00;
+      --veg: #e4f3e6; --veg-ink: #2c6b37; --quick: #fff1d6; --quick-ink: #8a5a00; --protein: #e6efff; --protein-ink: #2b4fa8;
+      --ok: #2f7d4a; --low: #b26a00; --out: #c13b2f;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body { margin: 0; color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+    header { position: sticky; top: 0; z-index: 3; background: rgb(255 253 249 / 0.92); backdrop-filter: saturate(160%) blur(10px); border-bottom: 1px solid var(--line); }
+    .nav { display: flex; align-items: center; gap: 26px; height: 64px; }
+    .brand { display: flex; align-items: center; gap: 9px; font-weight: 750; font-size: 19px; letter-spacing: -0.02em; }
+    .links { display: flex; gap: 20px; font-size: 14px; color: var(--ink-2); font-weight: 500; }
+    .links a.on { color: var(--ink); }
+    .search { flex: 1; max-width: 340px; margin-left: auto; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 10px; background: var(--soft); border: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .me { width: 34px; height: 34px; border-radius: 50%; background: var(--saffron); color: var(--saffron-ink); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+
+    .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 40px; align-items: center; padding: 36px 0 44px; }
+    .eyebrow { font-size: 13px; font-weight: 600; color: var(--low); display: flex; align-items: center; gap: 8px; }
+    .eyebrow i { width: 8px; height: 8px; border-radius: 50%; background: var(--saffron); display: inline-block; }
+    h1 { font-size: 50px; line-height: 1.02; letter-spacing: -0.04em; margin: 12px 0 14px; font-weight: 800; }
+    .lede { color: var(--muted); font-size: 17px; margin: 0 0 22px; max-width: 28em; }
+    .have { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px; box-shadow: 0 1px 2px rgb(30 40 30 / 0.04); }
+    .have small { display: block; font-size: 12px; color: var(--muted); margin: 0 0 8px 2px; font-weight: 500; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--soft); font-size: 13.5px; font-weight: 500; color: var(--ink-2); }
+    .chip b { color: var(--ok); }
+    .chip.add { background: none; border: 1px dashed #d3ccbf; color: var(--muted); }
+    .find { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+    .find span { font-size: 13px; color: var(--muted); }
+    .btn { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; background: var(--brand); color: var(--brand-ink); font-weight: 600; font-size: 14px; }
+
+    .photo { position: relative; }
+    .photo img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 20px; }
+    .float { position: absolute; left: 16px; bottom: 16px; background: #ffffff; border-radius: 14px; padding: 12px 14px; box-shadow: 0 10px 30px rgb(20 30 25 / 0.18); min-width: 230px; }
+    .float b { display: block; font-size: 15.5px; letter-spacing: -0.01em; }
+    .float .meta { display: flex; gap: 12px; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+    .stars { color: #e39b12; letter-spacing: 1px; }
+    .badge-time { position: absolute; right: 16px; top: 16px; background: var(--saffron); color: var(--saffron-ink); font-weight: 700; font-size: 12.5px; padding: 6px 10px; border-radius: 99px; }
+
+    h2 { font-size: 24px; letter-spacing: -0.025em; margin: 0; }
+    .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin: 8px 0 16px; }
+    .sec-head a { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+    .week { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .recipe { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+    .recipe img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+    .recipe div { padding: 12px 14px 14px; }
+    .recipe .day { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .recipe b { display: block; font-size: 16px; letter-spacing: -0.01em; margin: 2px 0 8px; }
+    .tag { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-right: 4px; }
+    .tag.veg { background: var(--veg); color: var(--veg-ink); }
+    .tag.quick { background: var(--quick); color: var(--quick-ink); }
+    .tag.protein { background: var(--protein); color: var(--protein-ink); }
+
+    .lower { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; margin: 34px 0 64px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+    .panel h3 { margin: 0 0 12px; font-size: 16px; }
+    .pantry { display: grid; }
+    .item { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+    .item:first-child { border-top: 0; }
+    .item .qty { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .st { font-size: 12px; font-weight: 700; }
+    .st.ok { color: var(--ok); } .st.low { color: var(--low); } .st.out { color: var(--out); }
+    footer { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 760px) {
+      .links, .search { display: none; }
+      .nav .me { margin-left: auto; }
+      .hero { grid-template-columns: 1fr; gap: 24px; padding-top: 24px; }
+      h1 { font-size: 38px; }
+      .week { grid-template-columns: 1fr 1fr; }
+      .lower { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#0f2530"/><path d="M10 6v16M7 6v5a3 3 0 0 0 6 0V6M19 6c-2.5 2-2.5 6.5 0 8v8" stroke="#e8f8f4" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>Larder</a>
+      <nav class="links"><a class="on" href="#">Recipes</a><a href="#">Plan</a><a href="#">Pantry</a><a href="#">Shopping list</a></nav>
+      <div class="search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5 14 14"/></svg>Search 4,800 recipes</div>
+      <span class="me">JS</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow"><i></i>Tonight, for two</div>
+        <h1>Cook what you already have.</h1>
+        <p class="lede">Tell Larder what’s in the cupboard. It finds recipes that use it up, plans the week, and writes the shopping list for the rest.</p>
+        <div class="have">
+          <small>In your kitchen</small>
+          <div class="chips">
+            <span class="chip"><b>✓</b>Tomatoes</span><span class="chip"><b>✓</b>White beans</span><span class="chip"><b>✓</b>Basil</span><span class="chip"><b>✓</b>Parmesan</span><span class="chip add">+ Add</span>
+          </div>
+          <div class="find"><span>12 recipes match</span><a class="btn" href="#">Show recipes</a></div>
+        </div>
+      </div>
+      <div class="photo">
+        <img src="stew.jpg" alt="Tomato and white bean stew in a cast-iron pot with basil">
+        <span class="badge-time">35 min</span>
+        <div class="float"><b>Tomato &amp; white bean stew</b><div class="meta"><span class="stars">★★★★★</span><span>4.9 · 1,204 cooks</span><span>Serves 4</span></div></div>
+      </div>
+    </section>
+
+    <div class="sec-head"><h2>This week</h2><a href="#">Edit plan →</a></div>
+    <section class="week">
+      <a class="recipe" href="#"><img src="chicken.jpg" alt="Lemon and herb roast chicken with potatoes"><div><span class="day">Monday</span><b>Lemon roast chicken &amp; potatoes</b><span class="tag protein">High protein</span><span class="tag quick">1 tray</span></div></a>
+      <a class="recipe" href="#"><img src="salad.jpg" alt="Green salad with roasted chickpeas and tahini"><div><span class="day">Wednesday</span><b>Crispy chickpea salad</b><span class="tag veg">Vegetarian</span><span class="tag quick">20 min</span></div></a>
+      <a class="recipe" href="#"><img src="pasta.jpg" alt="Tagliatelle with mushrooms and parmesan"><div><span class="day">Friday</span><b>Mushroom tagliatelle</b><span class="tag veg">Vegetarian</span><span class="tag quick">25 min</span></div></a>
+    </section>
+
+    <section class="lower">
+      <div class="panel">
+        <h3>Pantry</h3>
+        <div class="pantry">
+          <div class="item"><span>Olive oil</span><span class="qty">Half a bottle</span><span class="st ok">In stock</span></div>
+          <div class="item"><span>Basmati rice</span><span class="qty">200 g</span><span class="st low">Running low</span></div>
+          <div class="item"><span>Lemons</span><span class="qty">0</span><span class="st out">Out</span></div>
+          <div class="item"><span>Chickpeas</span><span class="qty">2 tins</span><span class="st ok">In stock</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Meals cooked at home</h3>
+        <svg viewBox="0 0 360 150" width="100%" height="150" aria-label="Meals cooked per week">
+          <g stroke="#eee8dd"><line x1="0" y1="24" x2="360" y2="24"/><line x1="0" y1="64" x2="360" y2="64"/><line x1="0" y1="104" x2="360" y2="104"/></g>
+          <g fill="#0f2530"><rect x="14" y="74" width="34" height="56" rx="5"/><rect x="72" y="60" width="34" height="70" rx="5"/><rect x="130" y="82" width="34" height="48" rx="5"/><rect x="188" y="46" width="34" height="84" rx="5"/><rect x="246" y="38" width="34" height="92" rx="5"/></g>
+          <rect x="304" y="28" width="34" height="102" rx="5" fill="#f4b740"/>
+          <g font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#66746e"><text x="20" y="146">Oct 6</text><text x="76" y="146">Oct 13</text><text x="134" y="146">Oct 20</text><text x="192" y="146">Oct 27</text><text x="252" y="146">Nov 3</text><text x="306" y="146">This wk</text></g>
+        </svg>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap">Larder is a demo site. Recipes and text are original; photographs are AI-generated.</div></footer>
+</body>
+</html>
