@@ -180,10 +180,76 @@
       activate();
       return;
     }
+    // Not wanted here yet: offer "Try", unless the site has a dark theme of
+    // its own (switched off right now). Its style sheets keep arriving until
+    // load, so nothing is offered before that check has run. Only while the
+    // system is dark: with Always on a light system, a site whose theme
+    // follows the system can't be switched to its own dark theme, and Try
+    // uses its own dark CSS (see darkMedia in sheets.js).
+    if (isTop && darkMQ.matches) {
+      const own = ownThemeNow();
+      if (own === undefined) return deactivate('ask');
+      if (own) {
+        if (offered) ADM.prompt.hide();
+        return deactivate('own-theme');
+      }
+    }
     deactivate('ask');
     state = 'offer';
     report();
     if (isTop && pol.offer && !offered) offer();
+  }
+
+  // ---------------------------------------------------------------------------
+  // The site's own dark theme (top frame, only on the way to an offer)
+  // ---------------------------------------------------------------------------
+  // undefined: not checked yet; null: none found; { via, selector }: found.
+  // A "none" is checked again at the next decision (a root class or attribute
+  // change, a navigation, a settings change) after the page's set of style
+  // sheets has changed. A sheet arriving on its own doesn't trigger one.
+  let ownTheme;
+  let ownThemeSheets = '';
+  let ownThemePending = false;
+  const sheetCount = () => `${document.styleSheets.length}/${document.adoptedStyleSheets ? document.adoptedStyleSheets.length : 0}`;
+
+  function ownThemeNow() {
+    if (ownTheme === undefined || (ownTheme === null && ownThemeSheets !== sheetCount())) checkOwnTheme();
+    return ownTheme;
+  }
+
+  function checkOwnTheme() {
+    if (ownThemePending) return;
+    ownThemePending = true;
+    const run = () => {
+      ownThemePending = false;
+      if (engine) return; // adapting now: the next offer decision checks again
+      const t0 = performance.now();
+      try {
+        ownTheme = ADM.detect.ownDarkTheme();
+      } catch (_) {
+        ownTheme = null;
+      }
+      ownThemeSheets = sheetCount();
+      timing.ownThemeMs = Math.round((performance.now() - t0) * 10) / 10;
+      evaluate('own-theme');
+    };
+    // After load, a beat, and an idle moment: one scan of every rule (about
+    // 10 ms on YouTube's 12,000) must not compete with the page's start. A
+    // slow ad or tracker can hold load back for a long time (Stack Overflow),
+    // so the wait is capped at 3 s from the first decision.
+    let started = false;
+    const go = () => {
+      if (started) return;
+      started = true;
+      if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 1000 });
+      else setTimeout(run, 0);
+    };
+    if (document.readyState === 'complete') {
+      setTimeout(go, 300);
+    } else {
+      window.addEventListener('load', () => setTimeout(go, 300), { once: true });
+      setTimeout(go, 3000);
+    }
   }
 
   function scheduleRetries() {
@@ -634,6 +700,7 @@
         host: location.hostname,
         siteKey: S.siteKey(location.hostname),
         sample,
+        ownTheme: ownTheme || null,
         stats: { ...stats },
         timing: {
           ...timing,

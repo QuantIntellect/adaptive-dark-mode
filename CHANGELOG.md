@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.3 — 2026-11-20
+
+Sites that have a dark theme of their own, switched off in their own settings.
+
+- No **Try** offer on sites that have a dark theme of their own, switched off in the site's own settings: YouTube
+  set to its light theme (`html[dark]`), Stack Overflow (`body.theme-dark`), Wikipedia
+  (`html.skin-theme-clientpref-night`), GitHub-style `[data-color-mode=dark]` with the attribute on `<html>`, or root
+  colors in a `prefers-color-scheme: dark` block that the site's setting gates (the block matches, the rule doesn't
+  match the root). The card no longer appears there, the toolbar badge shows nothing, and the popup says **Site's own
+  dark theme is off**, with **Try on this page** still available. **All bright sites** and sites you turned on are
+  adapted as before. The check runs only while the system is dark: with **Always** on a light system, sites that
+  follow the system still get the offer, and **Try** uses their own dark CSS.
+- Dark *section* styles are not taken for a site theme: `.theme-dark` used on a promo band (Apple, IKEA,
+  Microsoft), Bootstrap's `.bg-dark`/`.btn-dark`, and blocks that libraries ship to every site using them: Bootstrap
+  5.3's `[data-bs-theme=dark]` and Algolia DocSearch's `html[data-theme=dark]` count only when the site sets that
+  attribute on its root. A dark media block that applies but only restyles a widget doesn't count either.
+- The offer card now appears after the page's `load` event (at most 3 s after the first check), when the check for
+  the site's own theme has seen its style sheets. It used to appear right after DOMContentLoaded.
+- Tests: selector-grammar unit tests from real sites, and nine end-to-end checks (five kinds of own theme, the
+  popup, a page of dark sections and library blocks, a widget-only dark block, and Always on a light system, which
+  must all still get the offer). The own-theme rule in `light.html` moved into the theme-switch check, since a page
+  that ships one no longer gets the offer. The offer checks wait for the card instead of a fixed time.
+
 ## 1.0.2 — 2026-11-19
 
 Fixes for the first reports from users, and a tidier popup. Chrome Web Store users update from 1.0.0 to this version

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Own dark theme, switched off</title>
+<script>
+  // A site with a dark theme of its own, set to light by its own setting (not
+  // by the system appearance). Variants, ?v=:
+  //   flag   html[dark] {...} (YouTube)
+  //   class  html.site-dark body {...}
+  //   attr   [data-theme="dark"] {...} with data-theme on <html> (GitHub, Bootstrap docs)
+  //   media  a dark media block the site's setting gates (Reddit)
+  //   late   the theme's style sheet arrives with the load event
+  //   widget a dark media block that applies but only restyles a widget:
+  //          not a theme (the page stays light), so the offer is shown
+  const v = new URLSearchParams(location.search).get('v') || 'flag';
+  const THEMES = {
+    flag: 'html[dark] { --bg: #0f0f0f; --fg: #f1f1f1; --card: #272727; --line: #3f3f3f; }',
+    class: 'html.site-dark body { background: #101418; color: #e6e6e6; }',
+    attr: '[data-theme="dark"] { --bg: #0d1117; --fg: #e6edf3; --card: #161b22; --line: #30363d; }',
+    media: '@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #121212; --fg: #eeeeee; --card: #1e1e1e; --line: #333333; } }',
+    widget: '@media (prefers-color-scheme: dark) { :root { --chip: #303134; --chip-fg: #e8eaed; --focus: #8ab4f8; } }',
+  };
+  if (v === 'attr' || v === 'media') document.documentElement.dataset.theme = 'light';
+  const add = (css) => {
+    const s = document.createElement('style');
+    s.textContent = css;
+    document.head.appendChild(s);
+  };
+  if (v === 'late') addEventListener('load', () => add(THEMES.flag));
+  else add(THEMES[v]);
+</script>
+<style>
+  :root { --bg: #ffffff; --fg: #0f0f0f; --card: #f2f2f2; --line: #e5e5e5; }
+  body { margin: 0; font: 16px system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  header { padding: 14px 24px; border-bottom: 1px solid var(--line); font-weight: 600; }
+  main { padding: 24px; display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card { background: var(--card); border-radius: 12px; padding: 16px; min-height: 160px; }
+  .card p { margin: 8px 0 0; opacity: 0.8; }
+</style></head>
+<body>
+  <header>Streamly <span style="font-weight:400">· Appearance: Light theme</span></header>
+  <main>
+    <div class="card"><b>Evening mix</b><p>Twelve tracks for a quiet night in.</p></div>
+    <div class="card"><b>Workshop recording</b><p>Three hours of building a cabinet from scratch.</p></div>
+    <div class="card"><b>Race highlights</b><p>The final laps, from the onboard cameras.</p></div>
+    <div class="card"><b>How harbours work</b><p>Cranes, tides and the people who schedule them.</p></div>
+    <div class="card"><b>Studio session</b><p>A live take, recorded in one pass.</p></div>
+    <div class="card"><b>Weekend cooking</b><p>Slow food for a long Sunday.</p></div>
+  </main>
+</body></html>
