@@ -11,6 +11,8 @@
     starting: ['Checking page…', ''],
     'already-dark': ['Page is already dark', ''],
     'declares-dark': ['Site has its own dark mode', ''],
+    // A theme setting of the site's own, set to light (YouTube, Stack Overflow...).
+    'own-theme': ["Site's own dark theme is off", ''],
     'declares-light-only': ['Site asks to stay light (light only)', 'warn'],
     'system-light': ['System appearance is light', ''],
     off: ['Turned off', ''],
@@ -77,7 +79,7 @@
     $('status').textContent = text;
     $('dot').className = 'dot' + (tone ? ' ' + tone : '');
 
-    const canTry = status && (status.state === 'offer' || (status.state === 'inactive' && status.reason === 'ask'));
+    const canTry = status && (status.state === 'offer' || (status.state === 'inactive' && (status.reason === 'ask' || status.reason === 'own-theme')));
     $('tryBtn').hidden = !canTry;
 
     const active = !!status && status.state === 'active';

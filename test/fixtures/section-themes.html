@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Dark sections, no dark theme</title>
+<style>
+  /* A bright site with no dark theme of its own. Its "dark" rules style
+     sections and components (as on Apple, IKEA or Microsoft), plus two blocks
+     libraries ship to every site that uses them: Bootstrap 5.3's
+     [data-bs-theme=dark] and Algolia DocSearch's html[data-theme=dark]. */
+  body { margin: 0; font: 16px system-ui, sans-serif; background: #ffffff; color: #1d1d1f; }
+  #nav { padding: 14px 24px; border-bottom: 1px solid #e5e5e5; font-weight: 600; }
+  main { padding: 24px; display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+  .card { background: #f5f5f7; border-radius: 12px; padding: 16px; min-height: 140px; }
+  .theme-dark { background: #000000; color: #f5f5f7; --link: #2997ff; border-radius: 12px; padding: 16px; }
+  .theme-dark #nav { color: #ffffff; background: #1d1d1f; }
+  .theme-night { background: #0b0b0b; color: #eeeeee; --accent: #66aaff; }
+  .dark { --surface: #111111; --text: #eeeeee; }
+  [data-bs-theme="dark"] { color-scheme: dark; --bs-body-color: #dee2e6; --bs-body-bg: #212529; --bs-border-color: #495057; }
+  .navbar[data-bs-theme="dark"] { --bs-navbar-color: rgba(255, 255, 255, 0.55); background: #343a40; }
+  .bg-dark { background-color: #212529 !important; color: #ffffff; }
+  .btn-dark { color: #ffffff; background-color: #212529; border-color: #212529; padding: 6px 12px; border-radius: 6px; text-decoration: none; }
+  .dark-card { background: #1a3a48; color: #f2fefb; }
+  html[data-theme="dark"] { --docsearch-text-color: #f5f6f7; --docsearch-container-background: rgba(9, 10, 17, 0.8); --docsearch-modal-background: #15172a; --docsearch-searchbox-background: #090a11; }
+  @media (prefers-color-scheme: dark) { .highlight .k { color: #ff7b72; background: #161b22; --token: #000000; } }
+</style></head>
+<body>
+  <header id="nav">Northfield Outfitters</header>
+  <main>
+    <div class="card"><b>Rain shells</b><p>Seam-sealed, packable, and cut for layering.</p></div>
+    <div class="card"><b>Trail shoes</b><p>Grippy soles for wet rock and loose gravel.</p></div>
+    <div class="card"><b>Camp kitchen</b><p>Stoves, pots and a kettle that nests inside.</p></div>
+    <div class="theme-dark"><b>Night hike kit</b><p>Headlamps and reflective layers. <a class="btn-dark" href="#">Shop</a></p></div>
+    <div class="card"><b>Repairs</b><p>Send it back; we patch it and post it home.</p></div>
+    <div class="card dark-card"><b>Members</b><p>Free returns and early sales.</p></div>
+  </main>
+</body></html>

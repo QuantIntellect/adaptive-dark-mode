@@ -172,6 +172,17 @@ async function settle(page, ms = 1200) {
   await page.waitForTimeout(400);
 }
 
+/** Poll `fn` until it returns a truthy value or `ms` pass; returns the last value. */
+async function until(fn, ms = 6000) {
+  const end = Date.now() + ms;
+  let v = await fn();
+  while (!v && Date.now() < end) {
+    await new Promise((r) => setTimeout(r, 150));
+    v = await fn();
+  }
+  return v;
+}
+
 // --- main ----------------------------------------------------------------------
 const results = [];
 const check = (name, ok, detail) => {
@@ -312,6 +323,13 @@ check('hover dropdown is dark', (await L('.dropdown')) < 0.08, await L('.dropdow
 await shoot(page, 'light-on-hover', false);
 
 console.log('\nre-evaluation stability');
+// The site's own dark theme, switched by a class on <html>. It is added here,
+// not shipped in light.html: a site that has one gets no "Try" offer.
+await page.evaluate(() => {
+  const s = document.createElement('style');
+  s.textContent = 'html.site-dark body { background: #101418; color: #e6e6e6; }';
+  document.head.appendChild(s);
+});
 await page.evaluate(() => document.getElementById('dark-band').scrollIntoView());
 await page.waitForTimeout(300);
 await page.evaluate(() => document.documentElement.classList.add('scrolled-state'));
@@ -481,11 +499,12 @@ console.log('\n"Try" offer (default settings)');
 await configure({ scope: 'ask', sites: {}, dismissed: {} });
 await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
 await page.goto(`${base}/light.html`);
-await page.waitForTimeout(1500);
+// The card appears after load and the check for the site's own dark theme.
+const hasOffer = await until(() => page.evaluate(() => !!document.querySelector('adm-offer')));
 const offerState = await status(page);
-const hasOffer = await page.evaluate(() => !!document.querySelector('adm-offer'));
 check('bright page shows the Try offer and is not adapted yet', hasOffer && offerState && offerState.state === 'offer', offerState && `${offerState.state}/${offerState.reason}`);
-await page.waitForTimeout(400);
+// Past the card's entrance (260 ms) and its click guard (500 ms after it appears).
+await page.waitForTimeout(800);
 await shoot(page, 'offer', false);
 // The card is in a closed shadow root: click the "Try" button by position.
 await page.mouse.click(1280 - 49, 900 - 44);
@@ -495,6 +514,56 @@ const savedSites = await sw.evaluate(async () => (await chrome.storage.local.get
 check('clicking Try adapts the page and remembers the site', tried && tried.state === 'active' && savedSites['127.0.0.1'] === 'on', { state: tried && tried.state, sites: savedSites });
 await shoot(page, 'offer-applied', false);
 await configure({ scope: 'all', sites: {} });
+
+console.log('\nsites with a dark theme of their own (default settings)');
+{
+  await configure({ scope: 'ask', sites: {}, dismissed: {} });
+  const offerShown = () => page.evaluate(() => !!document.querySelector('adm-offer'));
+  const decided = async () => {
+    const s = await status(page);
+    return s && (s.state === 'offer' || s.reason === 'own-theme') ? s : null;
+  };
+  for (const v of ['flag', 'class', 'attr', 'media', 'late']) {
+    await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+    await page.goto(`${base}/own-theme.html?v=${v}`);
+    const s = (await until(decided)) || (await status(page));
+    const card = await offerShown();
+    check(`own dark theme (${v}): no offer`, !card && s && s.state === 'inactive' && s.reason === 'own-theme', s && { state: `${s.state}/${s.reason}`, card, ownTheme: s.ownTheme, ms: s.timing && s.timing.ownThemeMs });
+  }
+  // The popup says why, and still offers Try.
+  const tabId = await sw.evaluate(async (x) => (await chrome.tabs.query({})).find((t) => t.url === x)?.id, page.url());
+  const pop = await context.newPage();
+  await pop.emulateMedia({ colorScheme: 'dark' });
+  await pop.goto(`chrome-extension://${extensionId}/src/popup/popup.html?tab=${tabId}`);
+  await pop.waitForTimeout(700);
+  const popState = await pop.evaluate(() => ({ text: document.getElementById('status').textContent, tryShown: !document.getElementById('tryBtn').hidden }));
+  await pop.close();
+  check('popup: says the site\'s own dark theme is off, and still offers Try', /own dark theme is off/.test(popState.text) && popState.tryShown, popState);
+
+  await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
+  await page.goto(`${base}/section-themes.html`);
+  const secCard = await until(offerShown);
+  const sec = await status(page);
+  check('dark sections, Bootstrap\'s and DocSearch\'s built-in dark blocks: offer still shown', secCard && sec && sec.state === 'offer', sec && { state: `${sec.state}/${sec.reason}`, card: secCard, ownTheme: sec.ownTheme });
+
+  // A dark media block in force that only restyles a widget is not a theme.
+  await page.goto(`${base}/own-theme.html?v=widget`);
+  const wCard = await until(offerShown);
+  const w = await status(page);
+  check('dark media block that only restyles a widget: offer still shown', wCard && w && w.state === 'offer', w && { state: `${w.state}/${w.reason}`, card: wCard, ownTheme: w.ownTheme });
+
+  // Always on a light system: a site whose theme follows the system can't be
+  // switched to it, so the offer stays (Try uses the site's own dark CSS).
+  await configure({ mode: 'always' });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto(`${base}/own-theme.html?v=media`);
+  const aCard = await until(offerShown);
+  const a = await status(page);
+  check('Always on a light system: a site that follows the system still gets the offer', aCard && a && a.state === 'offer', a && { state: `${a.state}/${a.reason}`, card: aCard });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('about:blank');
+  await configure({ mode: 'system', scope: 'all', sites: {}, dismissed: {} });
+}
 
 console.log('\npopup');
 {
@@ -514,7 +583,7 @@ console.log('\npopup');
   await configure({ scope: 'ask', sites: {}, dismissed: {}, quirks: {} });
   await sw.evaluate(() => chrome.storage.local.remove('verdicts'));
   await page.goto(`${base}/light.html`);
-  await page.waitForTimeout(1500);
+  await until(async () => (await status(page))?.state === 'offer');
   await openPopup();
   const hOffer = await popHeight();
   const tryShown = await pop.evaluate(() => !document.getElementById('tryBtn').hidden);

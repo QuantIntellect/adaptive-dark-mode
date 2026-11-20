@@ -220,5 +220,258 @@
     return { verdict, medianBgY, lightFrac, textY, mediaPoints, samples: bgY.length };
   }
 
-  ADM.detect = { authorScheme, sampleAppearance, backdropAtPoint, gradientColor, canvasColor, pageSurface, MEDIA_TAGS };
+  // ---------------------------------------------------------------------------
+  // A dark theme of the site's own, switched off right now.
+  //
+  // Sites that follow the system appearance are already dark in dark mode,
+  // and sites that declare color-scheme are left alone (authorScheme). What
+  // remains are sites with a theme setting of their own, set to light:
+  // YouTube (html[dark]), Stack Overflow (body.theme-dark), Wikipedia
+  // (html.skin-theme-clientpref-night), Reddit (:root:not(.theme-light) in a
+  // dark media block). Offering to darken those is noise: their own dark
+  // theme is one setting away.
+  //
+  // Evidence, from the page's readable style sheets (cross-origin sheets are
+  // not fetched for this: it only decides whether to offer):
+  //   root         a rule for the root itself, keyed on a dark marker:
+  //                html[dark], body.theme-dark, html.dark body,
+  //                :root[data-mode=dark]. A marker with a value
+  //                ([data-mode=dark]) counts only when the root carries that
+  //                attribute: Algolia DocSearch ships html[data-theme=dark]
+  //                to every site that has its search box.
+  //   root-attr    a bare [theme-attribute=dark] rule, when <html> or <body>
+  //                carries that attribute. Bootstrap 5.3 ships
+  //                [data-bs-theme=dark] to every site; only a site that sets
+  //                data-bs-theme on its root uses it as a theme.
+  //   root-family  a bare dark class that no element has right now, from a
+  //                family the root carries (.theme-dark beside
+  //                body.theme-beta). A .theme-dark with no theme class on the
+  //                root is a style for dark sections (Apple, IKEA), not a
+  //                site theme.
+  //   media-root   root colors inside @media (prefers-color-scheme: dark),
+  //                while that query matches, in a rule that doesn't match the
+  //                root: the site's own setting gates them
+  //                (:root:not(.theme-light)). A dark block that applies but
+  //                only restyles a widget is not a theme.
+  // A rule counts only when it sets colors: two or more, three in a dark
+  // media block.
+  // ---------------------------------------------------------------------------
+  const DARK_WORDS = new Set(['dark', 'night']);
+  // Words that may stand beside "dark" in a theme marker's name. Anything else
+  // makes it a component name: .bg-dark, .btn-dark, .navbar-dark, .dark-card.
+  const THEME_WORDS = new Set(['theme', 'themed', 'mode', 'scheme', 'color', 'colour', 'skin', 'appearance', 'clientpref', 'pref', 'prefers', 'is', 'has', 'use', 'ui', 'app', 'site', 'page', 'v', 't', 'global', 'on', 'active', 'enabled']);
+  // Words that tie a root class to a theme family (theme-beta ~ theme-dark).
+  const FAMILY_WORDS = new Set(['theme', 'themed', 'mode', 'scheme', 'skin', 'appearance', 'color', 'colour', 'clientpref']);
+  const THEME_ATTR = /theme|mode|scheme|appearance|colou?r|skin/i;
+  const DARK_MEDIA = /prefers-color-scheme\s*:\s*dark/i;
+  const ROOT_RE = /^(?:html|body|:root)(?![\w-])/i;
+  const NOT_RE = /:not\((?:[^()]|\([^()]*\))*\)/gi;
+  const ATTR_RE = /\[\s*([\w-]+)\s*(?:([~|^$*]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]\s]+))\s*(?:[is]\s*)?)?\]/g;
+  const PSEUDO_RE = /::?[\w-]+(?:\((?:[^()]|\([^()]*\))*\))?/g;
+  const CLASS_RE = /\.((?:[\w-]|\\.)+)/g;
+  const COLORISH = /#[0-9a-f]{3,8}\b|\b(?:rgb|hsl|hwb|lab|lch|oklab|oklch|color)a?\(|^\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*,\s*\d+|^\s*\d+(?:\.\d+)?(?:deg)?\s+\d+(?:\.\d+)?%\s+\d+(?:\.\d+)?%|^\s*(?:black|white)\s*$/i;
+
+  /** "skin-theme-clientpref-night" -> [skin, theme, clientpref, night]; "darkMode" -> [dark, mode]. */
+  function nameWords(name) {
+    return String(name)
+      .replace(/\\/g, '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .toLowerCase()
+      .split(/[-_:]+/)
+      .filter(Boolean);
+  }
+
+  function isDarkName(name) {
+    const w = nameWords(name);
+    return w.length > 0 && w.length <= 5 && w.some((x) => DARK_WORDS.has(x)) && w.every((x) => DARK_WORDS.has(x) || THEME_WORDS.has(x));
+  }
+
+  /** Split at top-level commas (list) or combinators (compounds), outside brackets, parentheses and strings. */
+  function splitSelector(sel, compounds) {
+    const out = [];
+    let depth = 0;
+    let quote = null;
+    let cur = '';
+    for (let i = 0; i < sel.length; i++) {
+      const ch = sel[i];
+      if (ch === '\\') {
+        cur += ch + (sel[i + 1] || '');
+        i++;
+        continue;
+      }
+      if (quote) {
+        cur += ch;
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'") quote = ch;
+      else if (ch === '(' || ch === '[') depth++;
+      else if (ch === ')' || ch === ']') depth--;
+      if (depth === 0 && !quote && (compounds ? /[\s>+~]/.test(ch) : ch === ',')) {
+        if (cur.trim()) out.push(cur.trim());
+        cur = '';
+        continue;
+      }
+      cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+
+  /**
+   * One compound selector: { root, bare, marks }. root: it is html, body or
+   * :root. bare: it holds nothing but the root type, dark markers, theme
+   * attributes and pseudo-classes. marks: its dark markers. :not() is ignored.
+   */
+  function parseCompound(text) {
+    let s = text.replace(NOT_RE, '');
+    const root = ROOT_RE.test(s);
+    if (root) s = s.replace(ROOT_RE, '');
+    const marks = [];
+    let other = false;
+    s = s.replace(ATTR_RE, (_, name, op, v1, v2, v3) => {
+      const value = v1 ?? v2 ?? v3;
+      if (THEME_ATTR.test(name)) {
+        if (op ? nameWords(value).some((w) => DARK_WORDS.has(w)) : isDarkName(name.replace(/^data-/, ''))) marks.push({ kind: 'attr', name, valued: !!op });
+      } else if (!op && isDarkName(name.replace(/^data-/, ''))) {
+        marks.push({ kind: 'flag', name }); // [dark]
+      } else {
+        other = true;
+      }
+      return '';
+    });
+    s = s.replace(PSEUDO_RE, '');
+    s = s.replace(CLASS_RE, (_, name) => {
+      if (isDarkName(name)) marks.push({ kind: 'class', name: name.replace(/\\/g, '') });
+      else other = true;
+      return '';
+    });
+    s = s.trim();
+    if (s && s !== '*' && s !== '&') other = true;
+    return { root, bare: !other, marks };
+  }
+
+  /**
+   * Classify one complex selector (no commas). `page` describes the root:
+   * { hasAttr(name), family: Set of FAMILY_WORDS on root classes, dormant(className) }.
+   * Returns 'root' | 'root-attr' | 'root-family' | 'media-root' | null.
+   */
+  function themeSelector(sel, inDarkMedia, page) {
+    const parts = splitSelector(sel, true).map(parseCompound);
+    if (!parts.length) return null;
+    const subject = parts[parts.length - 1];
+    // A marker with a value counts only on a root that carries the attribute.
+    const usable = (m) => m.kind !== 'attr' || !m.valued || page.hasAttr(m.name);
+    // The root itself: html/body/:root, with only root compounds or bare
+    // markers before it (html.dark body, .dark body).
+    if (subject.root && parts.every((p) => p.root || (p.bare && p.marks.length))) {
+      if (parts.some((p) => p.marks.some(usable))) return 'root';
+      if (parts.some((p) => p.marks.length)) return null;
+      if (inDarkMedia) return 'media-root';
+    }
+    if (parts.length !== 1 || !subject.bare) return null;
+    for (const m of subject.marks) {
+      if (m.kind === 'attr' && page.hasAttr(m.name)) return 'root-attr';
+      if (m.kind === 'class' && nameWords(m.name).some((w) => page.family.has(w)) && page.dormant(m.name)) return 'root-family';
+    }
+    return null;
+  }
+
+  function colorCount(style) {
+    let n = 0;
+    for (let i = 0; i < style.length; i++) {
+      const p = style[i];
+      const v = style.getPropertyValue(p);
+      if (p === 'color-scheme') {
+        if (/dark/i.test(v)) n += 2;
+      } else if ((p.startsWith('--') || /^(?:background(?:-color)?|color|border(?:-\w+)?-color)$/.test(p)) && COLORISH.test(v)) {
+        n++;
+      }
+    }
+    return n;
+  }
+
+  /** Returns { via, selector } when the page ships a dark theme of its own, else null. */
+  function ownDarkTheme(budget = 60000) {
+    const roots = [document.documentElement, document.body].filter(Boolean);
+    const family = new Set();
+    for (const el of roots) for (const c of el.classList) for (const w of nameWords(c)) if (FAMILY_WORDS.has(w)) family.add(w);
+    const page = {
+      hasAttr: (name) => roots.some((el) => el.hasAttribute(name)),
+      family,
+      dormant: (cls) => document.getElementsByClassName(cls).length === 0,
+    };
+    // A dark media block counts only while it matches (the system is dark).
+    const darkNow = (media) => {
+      if (!DARK_MEDIA.test(media)) return false;
+      try {
+        return matchMedia(media).matches;
+      } catch (_) {
+        return false;
+      }
+    };
+    const appliesToRoot = (sel) => {
+      try {
+        return roots.some((el) => el.matches(sel));
+      } catch (_) {
+        return true; // can't tell: not evidence
+      }
+    };
+    let found = null;
+    // darkMedia: inside a (prefers-color-scheme: dark) block that matches now.
+    const visit = (rules, darkMedia) => {
+      for (const rule of rules) {
+        if (found || budget-- <= 0) return;
+        if (rule instanceof CSSStyleRule) {
+          const text = rule.selectorText;
+          if ((darkMedia || /dark|night/i.test(text)) && colorCount(rule.style) >= (darkMedia ? 3 : 2)) {
+            for (const sel of splitSelector(text, false)) {
+              const via = themeSelector(sel, darkMedia, page);
+              if (via === 'media-root' && appliesToRoot(sel)) continue;
+              if (via) {
+                found = { via, selector: sel.slice(0, 120) };
+                return;
+              }
+            }
+          }
+          if (rule.cssRules && rule.cssRules.length) visit(rule.cssRules, darkMedia);
+        } else if (rule instanceof CSSImportRule) {
+          let inner = null;
+          try {
+            inner = rule.styleSheet && rule.styleSheet.cssRules;
+          } catch (_) {
+            /* cross-origin import */
+          }
+          if (inner) visit(inner, darkMedia || darkNow(rule.media.mediaText));
+        } else if (rule.cssRules) {
+          visit(rule.cssRules, darkMedia || (rule instanceof CSSMediaRule && darkNow(rule.media.mediaText)));
+        }
+      }
+    };
+    for (const sheet of [...document.styleSheets, ...(document.adoptedStyleSheets || [])]) {
+      let rules;
+      try {
+        rules = sheet.cssRules;
+      } catch (_) {
+        continue; // cross-origin
+      }
+      visit(rules, darkNow(sheet.media ? sheet.media.mediaText : ''));
+      if (found || budget <= 0) break;
+    }
+    return found;
+  }
+
+  ADM.detect = {
+    authorScheme,
+    sampleAppearance,
+    backdropAtPoint,
+    gradientColor,
+    canvasColor,
+    pageSurface,
+    ownDarkTheme,
+    themeSelector,
+    isDarkName,
+    splitSelector,
+    MEDIA_TAGS,
+  };
 })(globalThis);

@@ -81,8 +81,8 @@
   .full { grid-column: 1 / -1; }
   .ink { color: #222222; }
   .dark-band { background: #0b0f14; color: #e5e7eb; min-height: 1000px; padding: 40px 24px; }
-  /* the site's own dark theme, switched by a class on <html> */
-  html.site-dark body { background: #101418; color: #e6e6e6; }
+  /* No dark theme of its own: a site that has one gets no "Try" offer
+     (own-theme.html). The theme-switch check adds html.site-dark body {...}. */
   /* cascade: an unchanged later rule must still win over an earlier transformed one */
   .btn-base { --btn-bg: #533afd; background-color: var(--btn-bg); color: #fff; padding: 6px 12px; border-radius: 8px; display: inline-block; }
   .btn-ghost { background-color: transparent; color: #1f2937; }
