@@ -417,6 +417,7 @@
       subtree: true,
       characterData: true,
       attributes: true,
+      attributeOldValue: true,
       attributeFilter: ['style', 'class', 'bgcolor', 'color', 'text', 'media', 'disabled', 'rel', 'data-theme', 'data-color-mode', 'data-bs-theme', 'data-mode', 'theme', 'dark', 'content'],
     });
     engine.observers.set(r, mo);
@@ -440,8 +441,60 @@
     if (node.querySelectorAll) for (const el of node.querySelectorAll('*')) visit(el);
   }
 
+  // Loop guard. MutationObserver callbacks run as microtasks: if what we write
+  // comes back to us (a page observer that re-renders whatever changes under
+  // it, as Oracle JET's child tracking does), the two can call each other
+  // forever and the page never paints or takes input again (#5).
+  //   - Within one task an element is handled a few times at most.
+  //   - After LOOP_ROUNDS callbacks in one task, the rest waits for the next
+  //     task (the page gets to paint and take input in between). If that
+  //     happens LOOP_TASKS tasks in a row, it's a loop: drop the work until a
+  //     task goes by without it.
+  // The counts reset once the event loop moves on to another task.
+  const LOOP_ROUNDS = 100;
+  const LOOP_PER_ELEMENT = 8;
+  const LOOP_TASKS = 3;
+  let loopRounds = 0;
+  let loopSeen = new Map();
+  let loopResetQueued = false;
+  let loopHotTasks = 0;
+  let loopDeferred = [];
+  let loopDeferQueued = false;
+  function loopRound() {
+    if (!loopResetQueued) {
+      loopResetQueued = true;
+      setTimeout(() => {
+        loopResetQueued = false;
+        if (loopRounds <= LOOP_ROUNDS) loopHotTasks = 0;
+        loopRounds = 0;
+        loopSeen = new Map();
+      }, 0);
+    }
+    return ++loopRounds <= LOOP_ROUNDS;
+  }
+  function loopDefer(muts) {
+    if (loopRounds === LOOP_ROUNDS + 1 && ++loopHotTasks === LOOP_TASKS) stats.loopGuard = (stats.loopGuard || 0) + 1;
+    if (loopHotTasks >= LOOP_TASKS) return;
+    for (const m of muts) loopDeferred.push(m);
+    if (loopDeferQueued) return;
+    loopDeferQueued = true;
+    // Queued after this task's counter reset, so it runs with a fresh count.
+    setTimeout(() => {
+      loopDeferQueued = false;
+      const list = loopDeferred;
+      loopDeferred = [];
+      onMutations(list);
+    }, 0);
+  }
+  function loopAllows(el) {
+    const n = (loopSeen.get(el) || 0) + 1;
+    loopSeen.set(el, n);
+    return n <= LOOP_PER_ELEMENT;
+  }
+
   function onMutations(muts) {
     if (!engine) return;
+    if (!loopRound()) return loopDefer(muts);
     let sheetDirty = false;
     let rootChanged = false;
     const added = new Set();
@@ -466,6 +519,9 @@
         if (target.parentNode && target.parentNode.nodeName === 'STYLE') sheetDirty = true;
       } else if (m.type === 'attributes') {
         const name = m.attributeName;
+        // Written with the value it already had (a framework re-applying
+        // classes): nothing changed. Answering it is how loops start.
+        if (m.oldValue === target.getAttribute(name)) continue;
         if (name === 'media' || name === 'disabled' || name === 'rel') {
           sheetDirty = true;
           continue;
@@ -483,6 +539,7 @@
     }
     if (sheetDirty) engine.sheets.scheduleSync();
     for (const n of added) {
+      if (!loopAllows(n)) continue;
       engine.inline.processTree(n);
       engine.layout.observeTree(n);
       markExclusions(n);
@@ -491,7 +548,7 @@
     }
     let budget = 150;
     for (const el of restyled) {
-      if (!el.isConnected) continue;
+      if (!el.isConnected || !loopAllows(el)) continue;
       engine.inline.process(el);
       // A class/style change can change this element's own color: drop our
       // fix so the new authored color is visible, and re-check right away

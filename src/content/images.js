@@ -21,7 +21,8 @@
     constructor(ctx) {
       this.ctx = ctx; // { model, settings, stats, classifyRemote(url), fetchText(url) }
       this.verdicts = new Map(); // url -> Promise<verdict>
-      this.seen = new WeakMap(); // element -> url handled
+      this.seen = new WeakMap(); // <img> -> url handled
+      this.bgJobs = new WeakMap(); // element -> { url, promise } background image looked at
       this.meta = new WeakMap(); // element -> verdict (for text-over-image decisions)
     }
 
@@ -59,14 +60,26 @@
       }
     }
 
-    /** Small icon element painted with a background image, or a big tiled texture. */
-    async processBackground(el, cs) {
-      if (!this.ctx.settings.images) return;
+    /**
+     * Small icon element painted with a background image, or a big tiled
+     * texture. Resolves once that image has been looked at; calls for the
+     * same element and image share the one look. Afterwards verdictFor(el)
+     * is set only if the image was classified (most backgrounds, photos and
+     * artwork, are left alone and never are).
+     */
+    processBackground(el, cs) {
+      if (!this.ctx.settings.images) return Promise.resolve();
       const m = /url\(\s*["']?([^"')]+)["']?\s*\)/.exec(cs.backgroundImage);
-      if (!m) return;
+      if (!m) return Promise.resolve();
       const url = m[1];
-      if (this.seen.get(el) === url) return;
-      this.seen.set(el, url);
+      const job = this.bgJobs.get(el);
+      if (job && job.url === url) return job.promise;
+      const promise = this.lookAtBackground(el, cs, url).catch(() => {});
+      this.bgJobs.set(el, { url, promise });
+      return promise;
+    }
+
+    async lookAtBackground(el, cs, url) {
       const rect = el.getBoundingClientRect();
       const iconLike = rect.width <= 96 && rect.height <= 96 && el.childElementCount === 0 && !el.textContent.trim();
       const large = rect.width * rect.height > 100000;

@@ -36,6 +36,10 @@
       this.observed = new WeakSet();
       this.surfaceSeen = new WeakMap(); // surface -> pass id
       this.pass = 0;
+      this.frame = 0; // flush count
+      this.runs = new WeakMap(); // element -> { frame, run }: consecutive frames it was processed on
+      this.parked = new Set(); // elements held back from a re-queue loop, looked at again later
+      this.parkTimer = 0;
       this.running = true;
       this.visible = new Set();
       this.io = new IntersectionObserver((entries) => {
@@ -82,6 +86,8 @@
     stop() {
       this.running = false;
       this.io.disconnect();
+      clearTimeout(this.parkTimer);
+      this.parked.clear();
       this.queue.clear();
       this.visible.clear();
       this.offscreen.clear();
@@ -143,9 +149,21 @@
     flush() {
       this.scheduled = false;
       if (!this.running) return;
+      const frame = ++this.frame;
       const start = performance.now();
       for (const el of this.queue) {
         this.queue.delete(el);
+        // Back in the queue on every frame for half a second: something
+        // (possibly its own processing) keeps re-queueing it. Park it and
+        // look again a second later, after the churn.
+        const r = this.runs.get(el);
+        const run = r && r.frame === frame - 1 ? r.run + 1 : 1;
+        this.runs.set(el, { frame, run });
+        if (run > 30) {
+          if (run === 31) this.ctx.stats.loopGuard = (this.ctx.stats.loopGuard || 0) + 1;
+          this.park(el);
+          continue;
+        }
         try {
           this.process(el);
         } catch (_) {
@@ -154,6 +172,18 @@
         if (performance.now() - start > 10) break;
       }
       if (this.queue.size) this.schedule();
+    }
+
+    park(el) {
+      this.parked.add(el);
+      if (this.parkTimer) return;
+      this.parkTimer = setTimeout(() => {
+        this.parkTimer = 0;
+        if (!this.running) return;
+        for (const p of this.parked) if (p.isConnected) this.queue.add(p);
+        this.parked.clear();
+        this.schedule();
+      }, 1000);
     }
 
     // -------------------------------------------------------------------------
@@ -217,9 +247,11 @@
             const v = this.ctx.images.verdictFor(node);
             if (!v) {
               // Unclassified background image: classify it (it may be a light
-              // texture we remove), then look at this text again.
+              // texture we remove), then look at this text again, but only if
+              // that gave a verdict. Photos and artwork are never classified,
+              // and re-queueing on those re-checked the text on every frame (#5).
               this.ctx.images.processBackground(node, cs).then(() => {
-                if (el.isConnected) {
+                if (el.isConnected && this.ctx.images.verdictFor(node)) {
                   this.queue.add(el);
                   this.schedule();
                 }
@@ -285,7 +317,9 @@
     setFg(el, base, fixed) {
       if (fixed) {
         if (!el.hasAttribute('data-adm-fg')) this.ctx.stats.text = (this.ctx.stats.text || 0) + 1;
-        el.dataset.admBase = C.format(base);
+        // Same value, no write: the page's observers hear about every write.
+        const b = C.format(base);
+        if (el.dataset.admBase !== b) el.dataset.admBase = b;
         D.setAdjust(el, 'data-adm-fg', '--adm-fg', C.format(fixed));
       } else if (el.hasAttribute('data-adm-fg')) {
         delete el.dataset.admBase;
@@ -407,7 +441,7 @@
         if (!model.isVivid(p.c) && (invertAll || C.contrast(p.c, back) < 3)) next = model.flip(p.c);
         const key = p.prop === 'fill' ? 'admFill' : 'admStroke';
         if (next) {
-          p.sh.dataset[key] = C.format(p.c);
+          if (p.sh.dataset[key] !== C.format(p.c)) p.sh.dataset[key] = C.format(p.c);
           D.setAdjust(p.sh, p.attr, p.cprop, C.format(next));
           changed++;
         } else if (p.sh.hasAttribute(p.attr)) {

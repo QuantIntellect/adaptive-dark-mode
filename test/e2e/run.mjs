@@ -634,6 +634,94 @@ console.log('\npopup');
   await configure({ scope: 'all', sites: {}, quirks: {}, dismissed: {} });
 }
 
+console.log('\nfeedback loops (#5)');
+{
+  // Each case once kept the extension busy forever: microtask ping-pong froze
+  // the page, a frame loop burned CPU. A fresh tab, so a freeze here can't
+  // take the other checks down with it.
+  const lp = await context.newPage();
+  await lp.setViewportSize({ width: 1280, height: 900 });
+  await lp.emulateMedia({ colorScheme: 'dark' });
+  await configure({ mode: 'system', scope: 'all', sites: {}, quirks: {}, dismissed: {} });
+  const answer = (fn, ms = 3000) => Promise.race([lp.evaluate(fn).catch((e) => 'error: ' + e.message.split('\n')[0]), new Promise((r) => setTimeout(() => r('TIMEOUT'), ms))]);
+  lp.goto(`${base}/loops.html`).catch(() => {});
+  await new Promise((r) => setTimeout(r, 2500));
+  const alive = await answer(() => document.readyState);
+  check('page with loop triggers still answers', alive === 'complete', alive);
+  if (alive === 'complete') {
+    const st = await status(lp);
+    check('mode is on there', st && st.state === 'active', st && `${st.state}/${st.reason}`);
+    const imp = () => answer(() => getComputedStyle(document.getElementById('imp-border')).borderTopColor);
+    const b1 = await imp();
+    await new Promise((r) => setTimeout(r, 800));
+    const b2 = await imp();
+    check('inline !important border transformed once and stable', b1 === b2 && b1 !== 'rgb(240, 240, 240)' && /^rgb/.test(b1), { b1, b2 });
+    // Idle: nothing may keep rewriting attributes (Oracle: data-adm-base 60 times a second).
+    const idle = await answer(() => new Promise((resolve) => {
+      let n = 0;
+      const seen = {};
+      const mo = new MutationObserver((ms) => {
+        for (const m of ms) {
+          n++;
+          const k = `${m.target.id || m.target.localName} ${m.attributeName}`;
+          seen[k] = (seen[k] || 0) + 1;
+        }
+      });
+      mo.observe(document.body, { attributes: true, subtree: true });
+      const r0 = window.__trackerRounds;
+      setTimeout(() => {
+        mo.disconnect();
+        resolve({ n, seen, tracker: window.__trackerRounds - r0 });
+      }, 1500);
+    }), 5000);
+    check('idle page: no attribute keeps being rewritten', idle && idle.n === 0, idle);
+    const rounds = await answer(() => window.__trackerRounds);
+    check('child-tracking component settles', typeof rounds === 'number' && rounds < 20, rounds);
+    const rr1 = await answer(() => window.__rerenders);
+    await new Promise((r) => setTimeout(r, 1000));
+    const rr2 = await answer(() => window.__rerenders);
+    check('re-rendering component: the loop guard ends the ping-pong', typeof rr1 === 'number' && rr1 === rr2 && rr1 < 1000, { rr1, rr2 });
+    check('text over the unclassified photo keeps its authored color', (await answer(() => document.getElementById('art-text').hasAttribute('data-adm-fg'))) === true);
+    check('inline-colored child of the tracking component adapted', await answer(() => document.getElementById('tracked').hasAttribute('data-adm-i')));
+    await configure({ mode: 'off' });
+    await new Promise((r) => setTimeout(r, 600));
+    const restored = await answer(() => {
+      const s = document.getElementById('imp-border').style;
+      return [s.getPropertyValue('border-top-color'), s.getPropertyPriority('border-top-color'), document.getElementById('imp-bg').style.backgroundColor];
+    });
+    check('inline !important colors restored when the mode turns off', JSON.stringify(restored) === JSON.stringify(['rgb(240, 240, 240)', 'important', 'rgb(250, 250, 250)']), restored);
+    await configure({ mode: 'system' });
+  }
+  await lp.close().catch(() => {});
+}
+
+console.log('\noptions page: quirk selectors (#4)');
+{
+  const op = await context.newPage();
+  await op.goto(`chrome-extension://${extensionId}/src/options/options.html`);
+  const quirks = async () => (await sw.evaluate(async () => (await chrome.storage.local.get('settings')).settings.quirks)) || {};
+  const save = async (host, inv, pre) => {
+    await op.fill('#qHost', host);
+    await op.fill('#qInvert', inv);
+    await op.fill('#qPreserve', pre);
+    await op.click('#addQuirk button[type=submit]');
+    await op.waitForTimeout(250);
+    return op.evaluate(() => ['qInvert', 'qPreserve'].map((id) => document.getElementById(id).validationMessage));
+  };
+  await configure({ quirks: {} });
+  const bad = await save('quirks.example', '', 'Preserve: .map');
+  check('invalid selector rejected, naming it', /Preserve: \.map/.test(bad[1]) && !(await quirks())['quirks.example'], bad);
+  const msgs = await save('quirks.example', '', '.standard-apply-flow, [dir] .standard');
+  const q1 = (await quirks())['quirks.example'];
+  check('valid selectors accepted after a rejected one', q1 && q1.preserve === '.standard-apply-flow, [dir] .standard', { msgs, q1 });
+  await save('quirks2.example', 'a,', '');
+  await save('quirks2.example', ':is(.chart, .graph) img, .logo', '');
+  const q2 = (await quirks())['quirks2.example'];
+  check('the other field recovers too (commas inside :is() are fine)', q2 && q2.forceInvert === ':is(.chart, .graph) img, .logo', q2);
+  await configure({ quirks: {} });
+  await op.close();
+}
+
 if (withSites) {
   console.log('\nreal sites');
   const sites = [

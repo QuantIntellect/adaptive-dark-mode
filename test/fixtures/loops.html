@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Feedback loops</title>
+<style>
+  body { margin: 0; background: #fff; color: #1f2328; font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px; }
+  .box { padding: 16px; margin: 16px 0; border: 2px solid #ccc; }
+  #art { height: 220px; padding: 24px; background: #ddd url(hero.jpg) center / cover no-repeat; }
+  #art-text { color: #1f2328; font-weight: 600; }
+  x-tracker { display: block; padding: 16px; border: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pages that answer back</h1>
+  <p>Each block below once kept the extension busy forever. A bright page with plenty of ordinary text, so that it
+    samples as light and the mode turns on.</p>
+  <p>Issue #5 was an Oracle careers page that stopped responding with the mode on.</p>
+
+  <!-- A color the transform can't settle: transforming its own output again drifts (border colors oscillate). -->
+  <div id="imp-border" class="box" style="border-color: #f0f0f0 !important">Inline !important border</div>
+  <div id="imp-bg" class="box" style="background-color: #fafafa !important">Inline !important background</div>
+
+  <!-- Text over a photo that is never classified (large, not tiled). -->
+  <div id="art"><p id="art-text">Text over a photo background</p></div>
+
+  <!-- Oracle JET style child tracking: any attribute change under the component re-applies its children's
+       classes. The value is the same, but observers are still told about the write. -->
+  <x-tracker id="tracker">
+    <span id="tracked" style="color: #666; background-color: #f4f4f4">Inline-colored child</span>
+    <span id="tracked2">Plain child</span>
+  </x-tracker>
+
+  <!-- Worse: re-renders fresh children (without our attributes) whenever any attribute under it changes. Only the
+       loop guard can end this one. -->
+  <x-rerender id="rerender"></x-rerender>
+</main>
+<script>
+  window.__rerenders = 0;
+  customElements.define('x-rerender', class extends HTMLElement {
+    connectedCallback() {
+      const render = () => {
+        this.innerHTML = '<span class="rr" style="color: #555; background-color: #f2f2f2">Re-rendered child</span>';
+      };
+      render();
+      new MutationObserver((records) => {
+        if (!records.some((r) => r.type === 'attributes')) return;
+        window.__rerenders++;
+        render();
+      }).observe(this, { attributes: true, childList: true, subtree: true });
+    }
+  });
+  window.__trackerRounds = 0;
+  customElements.define('x-tracker', class extends HTMLElement {
+    connectedCallback() {
+      new MutationObserver((records) => {
+        // Its own class writes don't count (or it would loop on its own).
+        if (records.every((r) => r.attributeName === 'class')) return;
+        window.__trackerRounds++;
+        for (const c of this.children) c.className = c.className;
+      }).observe(this, { attributes: true, subtree: true });
+    }
+  });
+</script>
+</body>
+</html>

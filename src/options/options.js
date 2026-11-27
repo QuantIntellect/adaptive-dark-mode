@@ -84,6 +84,7 @@
 
   function editQuirk(host) {
     const q = settings.quirks[host] || {};
+    for (const id of ['qInvert', 'qPreserve']) $(id).setCustomValidity('');
     $('qHost').value = host;
     $('qDisable').checked = !!q.disable;
     $('qInvert').value = q.forceInvert || '';
@@ -91,14 +92,46 @@
     $('qHost').focus();
   }
 
-  function validSelector(sel) {
-    if (!sel) return true;
+  const parses = (sel) => {
     try {
       document.createDocumentFragment().querySelector(sel);
       return true;
     } catch (_) {
       return false;
     }
+  };
+
+  // Split a selector list at its top-level commas (not inside :is(...),
+  // [attr="a,b"] or quotes).
+  function splitList(list) {
+    const out = [];
+    let depth = 0;
+    let quote = '';
+    let from = 0;
+    for (let i = 0; i < list.length; i++) {
+      const ch = list[i];
+      if (quote) {
+        if (ch === '\\') i++;
+        else if (ch === quote) quote = '';
+      } else if (ch === '"' || ch === "'") quote = ch;
+      else if (ch === '\\') i++;
+      else if (ch === '(' || ch === '[') depth++;
+      else if ((ch === ')' || ch === ']') && depth) depth--;
+      else if (ch === ',' && !depth) {
+        out.push(list.slice(from, i));
+        from = i + 1;
+      }
+    }
+    out.push(list.slice(from));
+    return out.map((s) => s.trim());
+  }
+
+  /** '' when the list is valid, or a message that names the selector that isn't. */
+  function selectorError(list) {
+    if (!list || parses(list)) return '';
+    const bad = splitList(list).find((s) => !s || !parses(s));
+    if (bad === '') return 'Empty selector: remove the extra comma.';
+    return bad ? `Not a valid CSS selector: ${bad}` : 'Not a valid CSS selector list.';
   }
 
   function bind() {
@@ -110,6 +143,10 @@
       save((s) => (s.sites[host] = v));
       $('addHost').value = '';
     });
+    // A message set on a field blocks the form's submit until it is cleared,
+    // so it must go as soon as the field is edited. Otherwise one bad entry
+    // made every later selector look invalid until a reload (#4).
+    for (const id of ['qInvert', 'qPreserve']) $(id).addEventListener('input', (e) => e.target.setCustomValidity(''));
     $('addQuirk').addEventListener('submit', (e) => {
       e.preventDefault();
       const host = normalizeHost($('qHost').value);
@@ -117,7 +154,7 @@
       const forceInvert = $('qInvert').value.trim();
       const preserve = $('qPreserve').value.trim();
       for (const [input, sel] of [[$('qInvert'), forceInvert], [$('qPreserve'), preserve]]) {
-        input.setCustomValidity(validSelector(sel) ? '' : 'Not a valid CSS selector');
+        input.setCustomValidity(selectorError(sel));
         if (!input.reportValidity()) return;
       }
       const q = {};

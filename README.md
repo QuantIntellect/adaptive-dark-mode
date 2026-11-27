@@ -108,13 +108,13 @@ handles what rules can't: text contrast against the real backdrop, small dark co
 
 All checks run against the project's own fixtures in `test/fixtures/`: a recipe-site page that exercises
 every rule case, opt-out pages, an already-dark page, a late-rendering SPA, stacked drawing canvases, a consent
-dialog, a page whose body arrives late, sites with a dark theme of their own (no offer) and pages of dark sections
-(offer kept). Pages that must be left alone
+dialog, a page whose body arrives late, sites with a dark theme of their own (no offer), pages of dark sections
+(offer kept) and pages that answer the extension's changes (no feedback loop). Pages that must be left alone
 are also compared pixel for pixel.
 
 | Browser | Mode | Fixture checks |
 |---|---|---|
-| Chrome for Testing 153.0.8010.12 | headless | 92 / 92 (1.0.3) |
+| Chrome for Testing 153.0.8010.12 | headless | 104 / 104 (1.0.4) |
 | Google Chrome 157.0.8103.40 (macOS) | headed | 65 / 66 (1.0.0, before the six auto-theme checks). The miss is the pixel-identical "turned off" comparison. About 2,200 pixels around the two scaled product images differ, by 1 level out of 255 (15 in an earlier run). The separate "nothing left behind" check (0 attributes, 0 custom properties, 0 sheets) passed. The cause has not been isolated. |
 
 Real sites, with the extension on (text elements sampled after scrolling). Google Chrome 157 and Chrome for Testing 153 gave the
