@@ -58,7 +58,7 @@
   class InlineEngine {
     constructor(ctx) {
       this.ctx = ctx; // { model, stats }
-      this.important = new WeakMap(); // el -> { prop: [value, priority] } originals we replaced
+      this.important = new WeakMap(); // el -> { prop: { original, written } } !important declarations we swapped
     }
 
     processTree(node) {
@@ -78,6 +78,7 @@
       const want = new Map(); // custom prop -> value
       const ctx = { base: document.baseURI };
       let pending = false;
+      let swapped = false;
 
       for (let i = 0; i < style.length; i++) {
         const prop = style[i];
@@ -94,17 +95,24 @@
           pending = true;
           continue;
         }
-        const t = model.transformValue(value, role, ctx);
-        if (t === value) continue;
         if (style.getPropertyPriority(prop) === 'important') {
           // Inline !important beats every author sheet, so we have to swap the
-          // declaration itself (restored on shutdown).
+          // declaration itself (restored on shutdown). Never transform our own
+          // output again: transforms aren't idempotent (a border color drifts
+          // on every pass), and each pass would be a style write our observer
+          // sees, which froze pages (#5).
           const saved = this.important.get(el) || {};
-          if (!saved[prop]) saved[prop] = value;
-          this.important.set(el, saved);
+          if (saved[prop] && saved[prop].written === value) continue; // ours, untouched since
+          const t = model.transformValue(value, role, ctx);
+          if (t === value) continue;
           style.setProperty(prop, t, 'important');
+          saved[prop] = { original: value, written: style.getPropertyValue(prop) };
+          this.important.set(el, saved);
+          swapped = true;
           continue;
         }
+        const t = model.transformValue(value, role, ctx);
+        if (t === value) continue;
         const tok = TOKEN_OF[prop];
         if (!tok) continue;
         tokens.push(tok);
@@ -154,29 +162,35 @@
           if (!want.has(p)) stale.push(p);
         }
       }
-      if (!tokens.length && !want.size && !stale.length && !el.hasAttribute('data-adm-i')) return;
+      if (!swapped && !tokens.length && !want.size && !stale.length && !el.hasAttribute('data-adm-i')) return;
+      // Write only what changed. A write of the same value is still reported
+      // to the page's observers, and some re-render on any change (#5).
       for (const p of stale) style.removeProperty(p);
       for (const [p, v] of want) if (style.getPropertyValue(p) !== v) style.setProperty(p, v);
-      if (tokens.length) el.setAttribute('data-adm-i', tokens.join(' '));
-      else el.removeAttribute('data-adm-i');
+      const list = tokens.join(' ');
+      if (list && el.getAttribute('data-adm-i') !== list) el.setAttribute('data-adm-i', list);
+      else if (!list && el.hasAttribute('data-adm-i')) el.removeAttribute('data-adm-i');
       if (tokens.length) this.ctx.stats.inline = (this.ctx.stats.inline || 0) + 1;
       D.mark(el);
     }
 
-    restore(el) {
+    /** Put back the author's !important declarations we swapped (if the page hasn't replaced them since). */
+    unswap(el) {
       const saved = this.important.get(el);
-      if (saved) {
-        for (const [prop, value] of Object.entries(saved)) el.style.setProperty(prop, value, 'important');
-        this.important.delete(el);
+      if (!saved) return;
+      for (const [prop, s] of Object.entries(saved)) {
+        if (el.style.getPropertyValue(prop) === s.written) el.style.setProperty(prop, s.original, 'important');
       }
+      this.important.delete(el);
+    }
+
+    restore(el) {
+      this.unswap(el);
       D.clean(el);
     }
 
     restoreAll() {
-      for (const el of D.touched) {
-        const saved = this.important.get(el);
-        if (saved) for (const [prop, value] of Object.entries(saved)) el.style.setProperty(prop, value, 'important');
-      }
+      for (const el of D.touched) this.unswap(el);
     }
   }
 

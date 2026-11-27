@@ -98,6 +98,7 @@
         `${st.svg || 0} SVG`,
       ];
       if (st.controls) parts.push(`${st.controls} controls`);
+      if (st.loopGuard) parts.push(`loops stopped ${st.loopGuard}`);
       const t = status.timing || {};
       $('stats').textContent = parts.join(' · ') + (t.startMs != null ? ` · start ${t.startMs} ms` : '');
     }

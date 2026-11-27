@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.0.4 — 2026-11-27
+
+Fixes for pages that froze, and for the quirk form on the options page.
+
+- Fixed ([#5](https://github.com/QuantIntellect/adaptive-dark-mode/issues/5)): pages could stop responding. Four
+  ways the extension could end up answering its own changes, found on an Oracle careers page and in tests:
+  - An inline `!important` color was transformed again on every pass, and transforms don't settle (a border color
+    keeps changing). With nothing else to adjust on the element, each pass was a new style change that the extension
+    then answered, in microtasks, so the page never painted or took input again. One element with
+    `style="border-color: #f0f0f0 !important"` was enough. Now the original value is kept and only transformed once,
+    and it is put back when the mode turns off (unless the page changed it in the meantime).
+  - Text over a large background photo was checked again on every frame, because the photo is never classified
+    (photos are left alone) and the "classified, look again" step ran anyway. On the Oracle page that rewrote the
+    same attributes 60 times a second, and the site's UI library (Oracle JET) re-renders components when attributes
+    under them change. Text is now checked again only when the image actually got a verdict.
+  - Adjustments are written only when their value changes. A write of the same value still reaches the page's own
+    observers, and some re-render on any change.
+  - Attribute changes that leave the value as it was (a framework re-applying the same classes) are ignored.
+- A safety net for loops not covered above. Within one task an element is handled a few times at most. After 100
+  observer callbacks in one task, the rest waits for the next task, and if that happens three tasks in a row the
+  work is dropped until things calm down. Elements that keep coming back to the layout pass on every frame are looked
+  at again a second later. When this happens, the popup's statistics line says "loops stopped".
+- Fixed ([#4](https://github.com/QuantIntellect/adaptive-dark-mode/issues/4)): after one invalid selector in the
+  options page's quirk form, every selector was rejected as "Not a valid CSS selector" until the page was reloaded
+  (the message stayed set on the field and blocked the form). The message now clears as soon as the field is edited,
+  and it names the selector that's wrong. The placeholders no longer read like part of the value ("Invert, e.g.
+  .chart img, .logo").
+- Tests: a fixture with the loops above (an inline `!important` border, text over a photo, a component that
+  re-applies its children's classes, and one that re-renders fresh children whenever an attribute under it changes),
+  checked for a page that still answers, no attribute rewritten while idle, a stable border and colors restored on
+  turning off. Three checks for the quirk form.
+
 ## 1.0.3 — 2026-11-20
 
 Sites that have a dark theme of their own, switched off in their own settings.
